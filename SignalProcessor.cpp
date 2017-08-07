@@ -20,7 +20,7 @@ SignalProcessor::SignalProcessor(size_t size)
 void SignalProcessor::Reset()
 {
     m_queue.clear();
-    m_FF = Gaussian<double, double>();
+    m_FF = GaussProcess<3, double, double>();
     m_minFreq = 0;
     m_maxFreq = 0;
     m_currFreq = 0;

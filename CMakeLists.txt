@@ -56,6 +56,7 @@ set(SOURCE
 )
 
 set(HEADERS
+    ${CMAKE_CURRENT_SOURCE_DIR}/stat.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SignalProcessor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FastICA.h
     ${CMAKE_CURRENT_SOURCE_DIR}/detect_track/FaceDetector.h
