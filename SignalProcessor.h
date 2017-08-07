@@ -4,6 +4,17 @@
 typedef int64 TimerTimestamp;
 
 ///
+/// \brief sqr
+/// \param v
+/// \return square of the value
+///
+template<typename T>
+T sqr(T v)
+{
+    return v * v;
+}
+
+///
 /// \brief The Measure class
 /// Измерение.
 /// Включает в себя момент времени в который произведено измерение и собствнно само измерение.
@@ -18,6 +29,112 @@ public:
     {
         t = t_;
         val = val_;
+    }
+};
+
+///
+/// \brief The Gaussian class
+///
+template<typename MEAS_T, typename DATA_T>
+class Gaussian
+{
+public:
+    Gaussian(DATA_T eps = 2.7, DATA_T alpha = 0.9)
+        :
+          m_mean(0),
+          m_var(0),
+          m_eps(eps),
+          m_alpha(alpha),
+          m_lastMeasure(0),
+          m_measuresCount(0)
+    {
+    }
+
+    Gaussian(MEAS_T measure, DATA_T eps = 2.7, DATA_T alpha = 0.9)
+        :
+          m_mean(measure),
+          m_var(measure),
+          m_eps(eps),
+          m_alpha(alpha),
+          m_lastMeasure(measure),
+          m_measuresCount(1)
+    {
+    }
+
+    ///
+    /// \brief AddMeasure
+    /// \param measure
+    /// \return
+    ///
+    bool AddMeasure(MEAS_T measure)
+    {
+        if (CheckMeasure(measure))
+        {
+            m_lastMeasure = measure;
+            ++m_measuresCount;
+            UpdateModel(measure);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    MEAS_T CurrValue() const
+    {
+        return static_cast<MEAS_T>(m_mean);
+    }
+
+private:
+    ///
+    /// \brief m_mean
+    /// Mean value of the Gaussian
+    ///
+    DATA_T m_mean;
+    ///
+    /// \brief m_var
+    /// Variance
+    ///
+    DATA_T m_var;
+    ///
+    /// \brief m_eps
+    /// Model accuracy:
+    /// The maximum ratio of the deviation of the current measure from its average value to the mean square deviation
+    /// The value 2.7 ~= 0.95 probablity
+    ///
+    DATA_T m_eps;
+
+    ///
+    /// \brief m_alpha
+    /// Exponential smoothing coefficient
+    ///
+    DATA_T m_alpha;
+
+    ///
+    /// \brief m_lastMeasure
+    /// Latest measure
+    ///
+    MEAS_T m_lastMeasure;
+    size_t m_measuresCount;
+
+    ///
+    /// \brief CheckMeasure
+    /// \param measure
+    /// \return
+    ///
+    bool CheckMeasure(MEAS_T measure) const
+    {
+        return m_eps * m_var < std::abs(m_mean - measure);
+    }
+    ///
+    /// \brief UpdateModel
+    /// \param measure
+    ///
+    void UpdateModel(MEAS_T measure)
+    {
+        m_var = sqrt((1 - m_alpha) * sqr(m_var) + m_alpha * sqr(measure - m_mean));
+        m_mean = (1 - m_alpha) * m_mean + m_alpha * measure;
     }
 };
 
@@ -79,7 +196,7 @@ private:
     ///
     /// \brief m_FF
     ///
-    double m_FF;
+    Gaussian<double, double> m_FF;
     ///
     /// \brief m_minFreq
     ///

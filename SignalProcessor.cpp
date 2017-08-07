@@ -8,7 +8,6 @@
 SignalProcessor::SignalProcessor(size_t size)
     :
       m_size(size),
-      m_FF(0),
       m_minFreq(0),
       m_maxFreq(0),
       m_currFreq(0)
@@ -21,7 +20,7 @@ SignalProcessor::SignalProcessor(size_t size)
 void SignalProcessor::Reset()
 {
     m_queue.clear();
-    m_FF = 0;
+    m_FF = Gaussian<double, double>();
     m_minFreq = 0;
     m_maxFreq = 0;
     m_currFreq = 0;
@@ -47,7 +46,7 @@ void SignalProcessor::AddMeasure(TimerTimestamp captureTime, cv::Vec3d val)
 ///
 double SignalProcessor::GetFreq() const
 {
-    return m_FF;
+    return m_FF.CurrValue();
 }
 
 double SignalProcessor::GetInstantaneousFreq(
@@ -160,7 +159,7 @@ void SignalProcessor::Unmix(cv::Mat& src, cv::Mat& dst)
 ///
 void SignalProcessor::Draw(cv::Mat& img, double Freq)
 {
-    if (m_queue.size() < m_size / 4)
+    if (m_queue.size() < m_size / 2)
     {
         return;
     }
@@ -214,21 +213,9 @@ void SignalProcessor::Draw(cv::Mat& img, double Freq)
     if (maxInd.x > 0)
     {
         m_currFreq = 60.0 / (maxInd.x * dt);
-        if (m_currFreq > 200)
-        {
-            m_currFreq /= 3;
-        }
-        else if (m_currFreq > 100)
-        {
-            m_currFreq /= 2;
-        }
-        else if (m_currFreq < 50)
-        {
-            m_currFreq *= 2;
-        }
-        m_FF = (10.0 * m_FF + m_currFreq) / 11.0;
+        m_FF.AddMeasure(m_currFreq);
 
-        std::cout << "dst.size = " << dst.cols << ", maxInd = " << maxInd.x << ", dt = " << dt << ", freq [" << m_minFreq << ", " << m_maxFreq << "] = " << m_currFreq << " - " << m_FF << std::endl;
+        std::cout << "dst.size = " << dst.cols << ", maxInd = " << maxInd.x << ", dt = " << dt << ", freq [" << m_minFreq << ", " << m_maxFreq << "] = " << m_currFreq << " - " << m_FF.CurrValue() << std::endl;
     }
     else
     {
