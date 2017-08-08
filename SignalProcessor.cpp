@@ -20,7 +20,7 @@ SignalProcessor::SignalProcessor(size_t size)
 void SignalProcessor::Reset()
 {
     m_queue.clear();
-    m_FF = GaussProcess<3, double, double>();
+    m_FF = freq_t();
     m_minFreq = 0;
     m_maxFreq = 0;
     m_currFreq = 0;
@@ -216,6 +216,25 @@ void SignalProcessor::Draw(cv::Mat& img, double Freq)
         m_FF.AddMeasure(m_currFreq);
 
         std::cout << "dst.size = " << dst.cols << ", maxInd = " << maxInd.x << ", dt = " << dt << ", freq [" << m_minFreq << ", " << m_maxFreq << "] = " << m_currFreq << " - " << m_FF.CurrValue() << std::endl;
+
+        std::vector<double> allFreqs;
+        std::vector<double> robustFreqs;
+        m_FF.AllValues(allFreqs);
+        m_FF.RobustValues(robustFreqs);
+
+        std::cout << "All frequences: ";
+        for (auto v : allFreqs)
+        {
+            std::cout << v << " ";
+        }
+        std::cout << std::endl;
+
+        std::cout << "Robust frequences: ";
+        for (auto v : robustFreqs)
+        {
+            std::cout << v << " ";
+        }
+        std::cout << std::endl;
     }
     else
     {

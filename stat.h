@@ -29,7 +29,7 @@ public:
     Gaussian(DATA_T eps, DATA_T alpha)
         :
           m_mean(0),
-          m_var(0),
+          m_var(10),
           m_eps(eps),
           m_alpha(alpha),
           m_lastMeasure(0),
@@ -46,7 +46,7 @@ public:
     Gaussian(MEAS_T measure, DATA_T eps, DATA_T alpha)
         :
           m_mean(measure),
-          m_var(measure),
+          m_var(10),
           m_eps(eps),
           m_alpha(alpha),
           m_lastMeasure(measure),
@@ -118,7 +118,7 @@ private:
     ///
     bool CheckMeasure(MEAS_T measure) const
     {
-        return m_eps * m_var < std::abs(m_mean - measure);
+        return m_eps * m_var > std::abs(m_mean - measure);
     }
     ///
     /// \brief UpdateModel
@@ -126,8 +126,13 @@ private:
     ///
     void UpdateModel(MEAS_T measure)
     {
+        std::cout << "Update model (" << m_eps << ", " << m_alpha << "):" << std::endl;
+        std::cout << "Old: Mean = " << m_mean << ", Var = " << m_var << std::endl;
+
         m_var = sqrt((1 - m_alpha) * sqr(m_var) + m_alpha * sqr(measure - m_mean));
         m_mean = (1 - m_alpha) * m_mean + m_alpha * measure;
+
+        std::cout << "New: Mean = " << m_mean << ", Var = " << m_var << std::endl;
     }
 };
 
@@ -143,10 +148,11 @@ public:
     /// \param eps
     /// \param alpha
     ///
-    WeightedGaussian(DATA_T eps = 2.7, DATA_T alpha = 0.9)
+    WeightedGaussian(DATA_T eps = 2.7, DATA_T alpha = 0.1)
         :
           Gaussian<MEAS_T, DATA_T>(eps, alpha),
-          m_weight(0)
+          m_weight(0),
+          m_procAlpha(0.05)
     {
     }
 
@@ -156,31 +162,59 @@ public:
     /// \param eps
     /// \param alpha
     ///
-    WeightedGaussian(MEAS_T measure, DATA_T eps = 2.7, DATA_T alpha = 0.9)
+    WeightedGaussian(MEAS_T measure, DATA_T eps = 2.7, DATA_T alpha = 0.1)
         :
           Gaussian<MEAS_T, DATA_T>(measure, eps, alpha),
-          m_weight(0)
+          m_weight(0),
+          m_procAlpha(0.05)
     {
+    }
+
+    ///
+    /// \brief Weight
+    /// \return
+    ///
+    DATA_T Weight() const
+    {
+        return m_weight;
+    }
+
+    ///
+    /// \brief UpdateWeight
+    /// \param increase
+    ///
+    void UpdateWeight(bool increase)
+    {
+        m_weight = (1 - m_procAlpha) * m_weight + (increase ? m_procAlpha : 0);
     }
 
 private:
     ///
     /// \brief m_weight
+    /// Weight of the process
     ///
     DATA_T m_weight;
+
+    ///
+    /// \brief m_procAlpha
+    ///
+    DATA_T m_procAlpha;
 };
 
 ///
-/// \brief The GaussProcess class
+/// \brief The GaussMixture class
 ///
 template<size_t GAUSS_COUNT, typename MEAS_T, typename DATA_T>
-class GaussProcess
+class GaussMixture
 {
 public:
-    GaussProcess()
+    GaussMixture()
         :
           m_currProc(0),
-          m_createdProcesses(1)
+          m_createdProcesses(1),
+          m_weightThreshold(0.2),
+          m_defaultGussEps(2.7),
+          m_defaultGussAlpha(0.1)
     {
     }
 
@@ -189,68 +223,116 @@ public:
     /// \param measure
     /// \return
     ///
-    void AddMeasure(MEAS_T measure)
+    bool AddMeasure(MEAS_T measure)
     {
-        m_procList[m_currProc].AddMeasure(measure);
+        std::cout << "--------------------------------------------" << std::endl;
+        std::cout << "Measure = " << measure << std::endl;
 
-#if 0
-        bool find_process = false;
+        bool findProcess = false;
 
-        for (size_t ind = 0; ind < m_createdProcesses; ++ind)
+        if (m_procList[m_currProc].AddMeasure(measure))
         {
-            if (m_procList[ind].AddMeasure(measure))
+            std::cout << "Measure added to the current process " << m_currProc << std::endl;
+            findProcess = true;
+        }
+        else
+        {
+            for (size_t i = 0; i < m_createdProcesses; ++i)
             {
-                m_currProc = ind;
-                find_process = true;
-                break;
+                if (m_procList[i].AddMeasure(measure))
+                {
+                    std::cout << "Measure added to the process " << i << std::endl;
+
+                    m_currProc = i;
+                    findProcess = true;
+                    break;
+                }
             }
         }
-        if (!find_process) // Процесс не найден
+
+        if (!findProcess)
         {
-            // Создаём новый процесс или,
-            if (created_processes < PROC_PER_PIXEL)
+            if (m_createdProcesses < GAUSS_COUNT)
             {
-                ++created_processes;
-                curr_proc = created_processes - 1;
+                ++m_createdProcesses;
+                m_currProc = m_createdProcesses - 1;
 
-                proc_list[curr_proc].set_mu_sigma(new_val, min_sigma_val);
+                m_procList[m_currProc] = WeightedGaussian<MEAS_T, DATA_T>(measure, m_defaultGussEps, m_defaultGussAlpha);
+                findProcess = true;
 
-                find_process = true;
+                std::cout << "Create new process " << m_createdProcesses << std::endl;
             }
-            // если количество процессов равно PROC_PER_PIXEL, ищем процесс с наименьшим весом
             else
             {
-                float_t min_weight = proc_list[0].weight;
-                size_t min_proc = 0;
-                for (size_t proc_ind = 1; proc_ind < created_processes; ++proc_ind)
+                auto minWeight = m_procList[0].Weight();
+                size_t minProc = 0;
+                for (size_t i = 1; i < m_createdProcesses; ++i)
                 {
-                    if (proc_list[proc_ind].weight < min_weight)
+                    if (m_procList[i].Weight() < minWeight)
                     {
-                        min_proc = proc_ind;
-                        min_weight = proc_list[proc_ind].weight;
+                        minProc = i;
+                        minWeight = m_procList[i].Weight();
                     }
                 }
-                curr_proc = min_proc;
-                proc_list[curr_proc].set_mu_sigma(new_val, min_sigma_val);
+
+                m_currProc = minProc;
+                m_procList[m_currProc] = WeightedGaussian<MEAS_T, DATA_T>(measure, m_defaultGussEps, m_defaultGussAlpha);
+
+                std::cout << "Create new process from " << minProc << " with weight " << minWeight << std::endl;
             }
         }
 
-        // Обновление весов процессов
-        if (find_process)
+        std::cout << "Update weights:" << std::endl;
+        for (size_t i = 0; i < m_createdProcesses; ++i)
         {
-            for (size_t proc_ind = 0; proc_ind < created_processes; ++proc_ind)
-            {
-                proc_list[proc_ind].weight = (1 - alpha3) * proc_list[proc_ind].weight + alpha3 * ((proc_ind == curr_proc) ? 1 : 0);
-            }
+            m_procList[i].UpdateWeight(i == m_currProc);
+
+            std::cout << ((i == m_currProc) ? "+ " : "- ") << m_procList[i].CurrValue() << ": " << m_procList[i].Weight() << " - " << m_weightThreshold << std::endl;
         }
 
-        return proc_list[curr_proc].weight > weight_threshold;
-#endif
+        std::cout << "--------------------------------------------" << std::endl;
+
+        return m_procList[m_currProc].Weight() > m_weightThreshold;
     }
 
+    ///
+    /// \brief CurrValue
+    /// \return
+    ///
     MEAS_T CurrValue() const
     {
         return m_procList[m_currProc].CurrValue();
+    }
+
+    ///
+    /// \brief AllValues
+    /// \param vals
+    ///
+    void AllValues(std::vector<MEAS_T>& vals) const
+    {
+        vals.resize(m_createdProcesses);
+
+        for (size_t i = 0; i < m_createdProcesses; ++i)
+        {
+            vals[i] = m_procList[i].CurrValue();
+        }
+    }
+
+    ///
+    /// \brief RobustValues
+    /// \param vals
+    ///
+    void RobustValues(std::vector<MEAS_T>& vals) const
+    {
+        vals.clear();
+
+        for (size_t i = 0; i < m_createdProcesses; ++i)
+        {
+            if (m_procList[i].Weight() > m_weightThreshold)
+            {
+                vals.push_back(m_procList[i].CurrValue());
+            }
+        }
     }
 
 private:
@@ -266,4 +348,18 @@ private:
     /// \brief m_createdProcesses
     ///
     size_t m_createdProcesses;
+
+    ///
+    /// \brief m_weightThreshold
+    ///
+    DATA_T m_weightThreshold;
+
+    ///
+    /// \brief m_defaultGussEps
+    ///
+    DATA_T m_defaultGussEps;
+    ///
+    /// \brief m_defaultGussAlpha
+    ///
+    DATA_T m_defaultGussAlpha;
 };
