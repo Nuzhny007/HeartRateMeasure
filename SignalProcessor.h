@@ -79,7 +79,7 @@ private:
     ///
     size_t m_size;
 
-    typedef GaussMixture<3, double, double> freq_t;
+    typedef GaussMixture<6, double, double> freq_t;
     ///
     /// \brief m_FF
     ///

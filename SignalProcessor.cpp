@@ -202,32 +202,61 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
     // Чтобы все разместилось
     cv::normalize(dst, dst, 0,1, cv::NORM_MINMAX);
 
-    // Найдем пик на частотном разложении
-    cv::Point maxInd;
-    double maxVal;
-    cv::minMaxLoc(dst, nullptr, &maxVal, nullptr, &maxInd);
+    // Найдем 2 пика на частотном разложении
+    const size_t INDS_COUNT = 2;
+    int inds[INDS_COUNT] = { -1 };
+    std::deque<double> maxVals;
+    maxVals.push_back(dst.at<double>(0, 0));
+    for (int x = 1; x < dst.cols; ++x)
+    {
+        double val = dst.at<double>(0, x);
+        int ind = x;
+        for (size_t i = 0; i < maxVals.size(); ++i)
+        {
+            if (maxVals[i] < val)
+            {
+                std::swap(maxVals[i], val);
+                std::swap(inds[i], ind);
+            }
+        }
+        if (maxVals.size() < INDS_COUNT)
+        {
+            maxVals.push_back(val);
+            inds[maxVals.size() - 1] = ind;
+        }
+    }
 
     // И вычислим частоту
     m_maxFreq = 60.0 / (1 * dt);
     m_minFreq = 60.0 / ((dst.cols - 1) * dt);
-    if (maxInd.x > 0)
+
+    m_currFreq = -1;
+    for (size_t i = 0; i < maxVals.size(); ++i)
     {
-        m_currFreq = 60.0 / (maxInd.x * dt);
-        m_FF.AddMeasure(m_currFreq);
-
-        std::cout << "dst.size = " << dst.cols << ", maxInd = " << maxInd.x << ", dt = " << dt << ", freq [" << m_minFreq << ", " << m_maxFreq << "] = " << m_currFreq << " - " << m_FF.CurrValue() << std::endl;
-
-        std::vector<double> robustFreqs;
-        m_FF.RobustValues(robustFreqs);
-
-        std::cout << "Robust frequences: ";
-        for (auto v : robustFreqs)
+        if (inds[i] > 0)
         {
-            std::cout << v << " ";
+            double freq = 60.0 / (inds[i] * dt);
+            m_FF.AddMeasure(freq);
+
+            if (m_currFreq < 0)
+            {
+                m_currFreq = freq;
+
+                std::cout << "dst.size = " << dst.cols << ", maxInd = " << inds[i] << ", dt = " << dt << ", freq [" << m_minFreq << ", " << m_maxFreq << "] = " << m_currFreq << " - " << m_FF.CurrValue() << std::endl;
+
+                std::vector<double> robustFreqs;
+                m_FF.RobustValues(robustFreqs);
+
+                std::cout << "Robust frequences: ";
+                for (auto v : robustFreqs)
+                {
+                    std::cout << v << " ";
+                }
+                std::cout << std::endl;
+            }
         }
-        std::cout << std::endl;
     }
-    else
+    if (m_currFreq < 0)
     {
         m_currFreq = 0;
     }
@@ -236,9 +265,20 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
     float S = 50;
     for (int x = 1; x < dst.cols; ++x)
     {
+        bool findInd = false;
+
+        for (auto i : inds)
+        {
+            if (i == x)
+            {
+                findInd = true;
+                break;
+            }
+        }
+
         cv::line(img,
                  cv::Point(scale_x * x, img.rows - S * dst.at<double>(x)),
                  cv::Point(scale_x * x, img.rows),
-                 (x == maxInd.x) ? cv::Scalar(255, 0, 255) : cv::Scalar(255, 255, 255));
+                 findInd ? cv::Scalar(255, 0, 255) : cv::Scalar(255, 255, 255));
     }
 }
