@@ -153,11 +153,11 @@ void SignalProcessor::Unmix(cv::Mat& src, cv::Mat& dst)
 }
 
 ///
-/// \brief SignalProcessor::Draw
+/// \brief SignalProcessor::MeasureFrequency
 /// \param img
 /// \param Freq
 ///
-void SignalProcessor::Draw(cv::Mat& img, double Freq)
+void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
 {
     if (m_queue.size() < m_size / 2)
     {
@@ -217,17 +217,8 @@ void SignalProcessor::Draw(cv::Mat& img, double Freq)
 
         std::cout << "dst.size = " << dst.cols << ", maxInd = " << maxInd.x << ", dt = " << dt << ", freq [" << m_minFreq << ", " << m_maxFreq << "] = " << m_currFreq << " - " << m_FF.CurrValue() << std::endl;
 
-        std::vector<double> allFreqs;
         std::vector<double> robustFreqs;
-        m_FF.AllValues(allFreqs);
         m_FF.RobustValues(robustFreqs);
-
-        std::cout << "All frequences: ";
-        for (auto v : allFreqs)
-        {
-            std::cout << v << " ";
-        }
-        std::cout << std::endl;
 
         std::cout << "Robust frequences: ";
         for (auto v : robustFreqs)

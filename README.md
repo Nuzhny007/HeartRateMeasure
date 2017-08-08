@@ -1,6 +1,7 @@
 # HeartRateMeasure
 
 Work: http://people.csail.mit.edu/mrub/vidmag/
+
 And paper: http://people.csail.mit.edu/mrub/vidmag/papers/Balakrishnan_Detecting_Pulse_from_2013_CVPR_paper.pdf
 
 License: GNU GPLv3 http://www.gnu.org/licenses/gpl-3.0.txt 

@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
             TimerTimestamp captureTime = useFPS ? ((frameInd * 1000.) / fps) : t1;
             std::cout << "Capture time = " << captureTime << std::endl;
             sp.AddMeasure(captureTime, cv::Vec3d(m.val));
-            sp.Draw(I, Freq);
+            sp.MeasureFrequency(I, Freq);
 		}
         else
         {

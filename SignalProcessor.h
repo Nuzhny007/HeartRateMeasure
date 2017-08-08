@@ -70,7 +70,7 @@ public:
     /// \param img
     /// \param Freq
     ///
-    void Draw(cv::Mat& img, double Freq);
+    void MeasureFrequency(cv::Mat& img, double Freq);
 
 private:
     ///
