@@ -3,7 +3,6 @@
 #include "opencv2/opencv.hpp"
 
 #ifdef USE_GPU
-using namespace std;
 #include "opencv2/gpu/gpu.hpp"
 #endif
 

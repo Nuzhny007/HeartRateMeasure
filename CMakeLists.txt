@@ -6,17 +6,7 @@ FIND_PACKAGE(OpenCV 3.0 REQUIRED)
 
 FIND_PACKAGE(Eigen)
 
-
-if (CMAKE_COMPILER_IS_GNUCXX)
-#    find_package(Qt5Widgets)
-#    find_package(Qt5OpenGL)
-#    find_package(Qt5Test)
-#    find_package(Qt5Concurrent)
-endif()
-
-
 unset(CMAKE_CXX_FLAGS CACHE)
-
 
 find_package(OpenMP)
 if (OPENMP_FOUND)

@@ -49,6 +49,12 @@ double SignalProcessor::GetFreq() const
     return m_FF.CurrValue();
 }
 
+///
+/// \brief SignalProcessor::GetInstantaneousFreq
+/// \param minFreq
+/// \param maxFreq
+/// \return
+///
 double SignalProcessor::GetInstantaneousFreq(
         double* minFreq,
         double* maxFreq
@@ -281,4 +287,6 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
                  cv::Point(scale_x * x, img.rows),
                  findInd ? cv::Scalar(255, 0, 255) : cv::Scalar(255, 255, 255));
     }
+
+    m_FF.Visualize();
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <deque>
 #include <opencv2/opencv.hpp>
 
 ///
@@ -74,9 +75,22 @@ public:
         }
     }
 
+    ///
+    /// \brief CurrValue
+    /// \return
+    ///
     MEAS_T CurrValue() const
     {
         return static_cast<MEAS_T>(m_mean);
+    }
+
+    ///
+    /// \brief CurrValue
+    /// \return
+    ///
+    MEAS_T Epsilon() const
+    {
+        return static_cast<MEAS_T>(m_eps * m_var);
     }
 
 private:
@@ -130,6 +144,10 @@ private:
         std::cout << "Old: Mean = " << m_mean << ", Var = " << m_var << std::endl;
 
         m_var = sqrt((1 - m_alpha) * sqr(m_var) + m_alpha * sqr(measure - m_mean));
+        if (m_var < 2)
+        {
+            m_var = 2;
+        }
         m_mean = (1 - m_alpha) * m_mean + m_alpha * measure;
 
         std::cout << "New: Mean = " << m_mean << ", Var = " << m_var << std::endl;
@@ -214,7 +232,8 @@ public:
           m_createdProcesses(1),
           m_weightThreshold(0.2),
           m_defaultGussEps(2.7),
-          m_defaultGussAlpha(0.1)
+          m_defaultGussAlpha(0.1),
+          m_timeStamp(0)
     {
     }
 
@@ -288,9 +307,17 @@ public:
             m_procList[i].UpdateWeight(i == m_currProc);
 
             std::cout << ((i == m_currProc) ? "+ " : "- ") << m_procList[i].CurrValue() << ": " << m_procList[i].Weight() << " - " << m_weightThreshold << std::endl;
+
+            m_history[i].push_back(HistoryVal(m_procList[i].CurrValue(), m_procList[i].Epsilon(), m_procList[i].Weight(), m_timeStamp));
+            if (m_history[i].size() > MAX_HISTORY)
+            {
+                m_history[i].pop_front();
+            }
         }
 
         std::cout << "--------------------------------------------" << std::endl;
+
+        ++m_timeStamp;
 
         return m_procList[m_currProc].Weight() > m_weightThreshold;
     }
@@ -335,6 +362,64 @@ public:
         }
     }
 
+    ///
+    /// \brief Visualize
+    ///
+    void Visualize()
+    {
+        const int oneHeight = 100;
+        const DATA_T maxVal = 200;
+
+        cv::Mat img((oneHeight + 1) * GAUSS_COUNT, MAX_HISTORY, CV_8UC3, cv::Scalar(255, 255, 255));
+
+        int minTime = m_timeStamp;
+        for (int i = 0; i < GAUSS_COUNT; ++i)
+        {
+            const auto& hist = m_history[i];
+            if (!hist.empty() &&
+                    minTime > hist[0].m_timeStamp)
+            {
+                minTime > hist[0].m_timeStamp;
+            }
+        }
+
+
+        for (int i = 0; i < GAUSS_COUNT; ++i)
+        {
+            if (i)
+            {
+                cv::line(img, cv::Point(0, (oneHeight + 1) * i), cv::Point(img.cols - 1, (oneHeight + 1) * i), cv::Scalar(0, 0, 0));
+            }
+
+            const auto& hist = m_history[i];
+
+            for (int x = 0, stop = static_cast<int>(hist.size()); x < stop; ++x)
+            {
+                // Background
+                cv::Scalar backColor = (hist[x].m_weight > m_weightThreshold) ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0);
+                cv::Rect backRect(x, (oneHeight + 1) * i, 1, oneHeight);
+                cv::rectangle(img, backRect, backColor, -1, cv::LINE_8, 0);
+
+                // Values
+                int val = cvRound((oneHeight * hist[x].m_mean) / maxVal);
+                int upVal = cvRound((oneHeight * (hist[x].m_mean + hist[x].m_var)) / maxVal);
+                int loVal = cvRound((oneHeight * (hist[x].m_mean - hist[x].m_var)) / maxVal);
+                cv::circle(img, cv::Point(x, backRect.y + (oneHeight - val)), 1, cv::Scalar(255, 0, 255), -1);
+                cv::circle(img, cv::Point(x, backRect.y + (oneHeight - upVal)), 1, cv::Scalar(255, 0, 0), -1);
+                cv::circle(img, cv::Point(x, backRect.y + (oneHeight - loVal)), 1, cv::Scalar(255, 0, 0), -1);
+
+                if (x == stop - 1)
+                {
+                    int fontFace = cv::FONT_HERSHEY_SCRIPT_SIMPLEX;
+                    double fontScale = 0.5;
+                    cv::putText(img, std::to_string(hist[x].m_mean), cv::Point(MAX_HISTORY / 2, backRect.y + 20), fontFace, fontScale, cv::Scalar(0, 0, 0), 1);
+                }
+            }
+        }
+
+        cv::imshow("mixture", img);
+    }
+
 private:
     ///
     /// \brief m_procList
@@ -362,4 +447,26 @@ private:
     /// \brief m_defaultGussAlpha
     ///
     DATA_T m_defaultGussAlpha;
+
+    ///
+    /// \brief m_timeStamp
+    ///
+    int m_timeStamp;
+
+    struct HistoryVal
+    {
+        DATA_T m_mean;
+        DATA_T m_var;
+        DATA_T m_weight;
+        int m_timeStamp;
+
+        HistoryVal(DATA_T mean, DATA_T var, DATA_T weight, int timeStamp)
+            : m_mean(mean), m_var(var), m_weight(weight), m_timeStamp(timeStamp)
+        {
+
+        }
+    };
+    static const int MAX_HISTORY = 600;
+
+    std::deque<HistoryVal> m_history[GAUSS_COUNT];
 };
