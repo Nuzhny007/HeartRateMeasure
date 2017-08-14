@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
         }
 
 		// Детект лица
-        cv::Rect face = faceDetector.detect_biggest_face(rgbframe);
+        cv::Rect face = faceDetector.detect_biggest_face(rgbframe, useSkinDetection);
         // Tracking
         if (face.area() > 0)
         {
@@ -179,7 +179,7 @@ int main(int argc, char* argv[])
 		// Если есть объект ненулевой площади вычисляем среднее по цвету
         if (currentRect.area() > 0)
 		{
-            cv::Mat skinMask = skinDetector.Detect(frame(currentRect));
+            cv::Mat skinMask = skinDetector.Detect(rgbframe(currentRect));
             cv::Scalar meanVal = cv::mean(frame(currentRect), skinMask.empty() ? cv::noArray() : skinMask);
 
             TimerTimestamp captureTime = useFPS ? ((frameInd * 1000.) / fps) : t1;

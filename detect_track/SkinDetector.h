@@ -18,4 +18,15 @@ public:
 
 private:
     cv::Mat m_skinMask;
+
+    std::string m_dataFileName;
+    std::string m_modelFileName;
+
+    bool m_useRGB;
+
+    ///
+    /// \brief m_dtree
+    /// DecisionTree Classifier
+    ///
+    cv::Ptr<cv::ml::StatModel> m_dtree;
 };

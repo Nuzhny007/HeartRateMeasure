@@ -12,7 +12,7 @@ public:
     FaceDetector();
     ~FaceDetector();
 
-    cv::Rect detect_biggest_face(cv::Mat& image);
+    cv::Rect detect_biggest_face(cv::Mat& image, bool originalFace);
 
 private:
     double m_kw;
