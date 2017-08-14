@@ -372,41 +372,45 @@ public:
 
         cv::Mat img((oneHeight + 1) * GAUSS_COUNT, MAX_HISTORY, CV_8UC3, cv::Scalar(255, 255, 255));
 
-        int minTime = m_timeStamp;
-        for (int i = 0; i < GAUSS_COUNT; ++i)
-        {
-            const auto& hist = m_history[i];
-            if (!hist.empty() &&
-                    minTime > hist[0].m_timeStamp)
-            {
-                minTime > hist[0].m_timeStamp;
-            }
-        }
-
-
         for (int i = 0; i < GAUSS_COUNT; ++i)
         {
             if (i)
             {
-                cv::line(img, cv::Point(0, (oneHeight + 1) * i), cv::Point(img.cols - 1, (oneHeight + 1) * i), cv::Scalar(0, 0, 0));
+                cv::line(img, cv::Point(0, (oneHeight + 1) * i - 1), cv::Point(img.cols - 1, (oneHeight + 1) * i - 1), cv::Scalar(0, 0, 0));
             }
 
             const auto& hist = m_history[i];
 
             for (int x = 0, stop = static_cast<int>(hist.size()); x < stop; ++x)
             {
+                int ts = 0;
+
+                if (MAX_HISTORY > m_timeStamp)
+                {
+                    ts = hist[x].m_timeStamp;
+                }
+                else
+                {
+                    ts = MAX_HISTORY - m_timeStamp - hist[x].m_timeStamp;
+                }
+
+                if (ts < 0)
+                {
+                    break;
+                }
+
                 // Background
                 cv::Scalar backColor = (hist[x].m_weight > m_weightThreshold) ? cv::Scalar(0, 0, 255) : cv::Scalar(0, 255, 0);
-                cv::Rect backRect(x, (oneHeight + 1) * i, 1, oneHeight);
+                cv::Rect backRect(ts, (oneHeight + 1) * i, 1, oneHeight);
                 cv::rectangle(img, backRect, backColor, -1, cv::LINE_8, 0);
 
                 // Values
                 int val = cvRound((oneHeight * hist[x].m_mean) / maxVal);
                 int upVal = cvRound((oneHeight * (hist[x].m_mean + hist[x].m_var)) / maxVal);
                 int loVal = cvRound((oneHeight * (hist[x].m_mean - hist[x].m_var)) / maxVal);
-                cv::circle(img, cv::Point(x, backRect.y + (oneHeight - val)), 1, cv::Scalar(255, 0, 255), -1);
-                cv::circle(img, cv::Point(x, backRect.y + (oneHeight - upVal)), 1, cv::Scalar(255, 0, 0), -1);
-                cv::circle(img, cv::Point(x, backRect.y + (oneHeight - loVal)), 1, cv::Scalar(255, 0, 0), -1);
+                cv::circle(img, cv::Point(ts, backRect.y + (oneHeight - val)), 1, cv::Scalar(255, 0, 255), -1);
+                cv::circle(img, cv::Point(ts, backRect.y + (oneHeight - upVal)), 1, cv::Scalar(255, 0, 0), -1);
+                cv::circle(img, cv::Point(ts, backRect.y + (oneHeight - loVal)), 1, cv::Scalar(255, 0, 0), -1);
 
                 if (x == stop - 1)
                 {
