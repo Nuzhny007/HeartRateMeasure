@@ -5,6 +5,7 @@
 #include "SignalProcessor.h"
 
 #include "detect_track/FaceDetector.h"
+#include "detect_track/SkinDetector.h"
 #include "detect_track/LKTracker.h"
 #include "eulerian_ma/EulerianMA.h"
 
@@ -36,6 +37,8 @@ int main(int argc, char* argv[])
     // Количество измерений в графике
     int N_pts = 256;
 
+    bool useSkinDetection = true;
+
     if (argc > 1)
     {
         fileName = argv[1];
@@ -48,22 +51,26 @@ int main(int argc, char* argv[])
     {
         useMA = atoi(argv[3]) > 0;
     }
+    if (argc > 4)
+    {
+        useSkinDetection = atoi(argv[4]) > 0;
+    }
 
     cv::VideoCapture capture;
     if (fileName.size() > 1)
     {
         capture.open(fileName);
 
-    if (!capture.isOpened())
-    {
-        capture.open(0);
-        useFPS = false;
         if (!capture.isOpened())
         {
-            std::cerr << "File or cam not opened!" << std::endl;
-            return -1;
+            capture.open(0);
+            useFPS = false;
+            if (!capture.isOpened())
+            {
+                std::cerr << "File or cam not opened!" << std::endl;
+                return -1;
+            }
         }
-    }
     }
     else
     {
@@ -98,6 +105,18 @@ int main(int argc, char* argv[])
 
     // Face detector and tracker
     FaceDetector faceDetector;
+    SkinDetector skinDetector;
+    if (useSkinDetection)
+    {
+        if (!skinDetector.Init("../HeartRateMeasure/data/"))
+        {
+            useSkinDetection = skinDetector.Learn("../HeartRateMeasure/data/");
+            if (!useSkinDetection)
+            {
+                std::cout << "Scin detector wasn't initializad!" << std::endl;
+            }
+        }
+    }
     LKTracker faceTracker;
     EulerianMA eulerianMA;
 
@@ -160,10 +179,12 @@ int main(int argc, char* argv[])
 		// Если есть объект ненулевой площади вычисляем среднее по цвету
         if (currentRect.area() > 0)
 		{
-            cv::Scalar m = mean(frame(currentRect));
+            cv::Mat skinMask = skinDetector.Detect(frame(currentRect));
+            cv::Scalar meanVal = cv::mean(frame(currentRect), skinMask.empty() ? cv::noArray() : skinMask);
+
             TimerTimestamp captureTime = useFPS ? ((frameInd * 1000.) / fps) : t1;
             std::cout << "Capture time = " << captureTime << std::endl;
-            sp.AddMeasure(captureTime, cv::Vec3d(m.val));
+            sp.AddMeasure(captureTime, cv::Vec3d(meanVal.val));
             sp.MeasureFrequency(I, Freq);
 		}
         else

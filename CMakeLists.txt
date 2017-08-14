@@ -40,6 +40,7 @@ set(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/SignalProcessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FastICA.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/detect_track/FaceDetector.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/detect_track/SkinDetector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/detect_track/LKTracker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eulerian_ma/EulerianMA.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eulerian_ma/iir.cpp
@@ -50,6 +51,7 @@ set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/SignalProcessor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FastICA.h
     ${CMAKE_CURRENT_SOURCE_DIR}/detect_track/FaceDetector.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/detect_track/SkinDetector.h
     ${CMAKE_CURRENT_SOURCE_DIR}/detect_track/LKTracker.h
     ${CMAKE_CURRENT_SOURCE_DIR}/eulerian_ma/EulerianMA.h
     ${CMAKE_CURRENT_SOURCE_DIR}/eulerian_ma/iir.h
