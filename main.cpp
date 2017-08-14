@@ -106,6 +106,8 @@ int main(int argc, char* argv[])
 
     double tick_freq = cv::getTickFrequency();
 
+    bool manual = false;
+
     int frameInd = 0;
     cv::Mat frame;
     cv::Mat rgbframe;
@@ -208,14 +210,25 @@ int main(int argc, char* argv[])
 
         double t = (t2 - t1) / tick_freq;
         std::cout << "t = " << t << std::endl;
-        int k = cv::waitKey(std::max<int>(1, 1000 / fps - t / 1000));
-        if (k > 0)
+        int waitTime = manual ? 0 : (std::max<int>(1, 1000 / fps - t / 1000));
+        int k = cv::waitKey(waitTime);
+
+        if (k == 'm' || k == 'M')
         {
-            break;
+            manual = !manual;
+        }
+        else
+        {
+            if (!manual && k > 0)
+            {
+                break;
+            }
         }
 
         ++frameInd;
 	}
+
+    cv::waitKey(0);
 
     return 0;
 }
