@@ -391,7 +391,7 @@ public:
                 }
                 else
                 {
-                    ts = MAX_HISTORY - m_timeStamp - hist[x].m_timeStamp;
+                    ts = MAX_HISTORY - m_timeStamp + hist[x].m_timeStamp;
                 }
 
                 if (ts < 0)

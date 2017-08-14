@@ -40,7 +40,7 @@ FaceDetector::~FaceDetector()
 //------------------------------------------------------
 //
 //------------------------------------------------------
-cv::Rect FaceDetector::detect_biggest_face(cv::Mat& image)
+cv::Rect FaceDetector::detect_biggest_face(cv::Mat& image, bool originalFace)
 {
     cv::Rect res(0, 0, 0, 0);
 
@@ -104,16 +104,18 @@ cv::Rect FaceDetector::detect_biggest_face(cv::Mat& image)
     }
 #endif
 
+    if (!originalFace)
+    {
+        const double dw = res.width * m_kw;
+        const double dh = res.height * m_kh;
+        const double dx = dw / 2.0;
+        const double dy = dh / 2.0;
 
-    const double dw = res.width * m_kw;
-	const double dh = res.height * m_kh;
-	const double dx = dw / 2.0;
-	const double dy = dh / 2.0;
-
-    res.x += static_cast<int>(dx);
-	res.y += static_cast<int>(dy);
-	res.width -= static_cast<int>(dw);
-	res.height -= static_cast<int>(dh);
+        res.x += static_cast<int>(dx);
+        res.y += static_cast<int>(dy);
+        res.width -= static_cast<int>(dw);
+        res.height -= static_cast<int>(dh);
+    }
 
     return res;
 }
