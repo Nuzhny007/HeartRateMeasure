@@ -7,7 +7,7 @@
 SkinDetector::SkinDetector()
     :
       m_dataFileName("Skin_NonSkin.txt"),
-      m_modelFileName(""),
+      m_modelFileName("skin_model.yaml"),
       m_useRGB(true)
 {
 
@@ -33,20 +33,25 @@ cv::Mat SkinDetector::Detect(cv::Mat image)
         m_skinMask = cv::Mat(image.size(), CV_8UC1, cv::Scalar(255, 255, 255));
     }
 
-    if (m_dtree)
+    if (m_model)
     {
-        cv::Mat sample(3, 1, CV_32FC1);
+        cv::Mat sample(1, 3, CV_32FC1);
         for (int y = 0; y < image.rows; ++y)
         {
+            const uchar* imgPtr = image.ptr(y);
+            uchar* maskPtr = m_skinMask.ptr(y);
+
             for (int x = 0; x < image.cols; ++x)
             {
-                cv::Vec3b px = image.at<cv::Vec3b>(y, x);
-                sample.at<float>(0, 0) = px[0];
-                sample.at<float>(0, 1) = px[1];
-                sample.at<float>(0, 2) = px[2];
+                sample.at<float>(0, 0) = imgPtr[0];
+                sample.at<float>(0, 1) = imgPtr[1];
+                sample.at<float>(0, 2) = imgPtr[2];
 
-                int response = (int)m_dtree->predict(sample);
-                m_skinMask.at<uchar>(y, x) = (response == 0) ? 255 : 0;
+                int response = (int)m_model->predict(sample);
+                *maskPtr = (response == 0) ? 255 : 0;
+
+                imgPtr += 3;
+                ++maskPtr;
             }
         }
     }
@@ -57,21 +62,49 @@ cv::Mat SkinDetector::Detect(cv::Mat image)
 }
 
 ///
-/// \brief SkinDetector::Init
+/// \brief SkinDetector::InitModel
 /// \param modelPath
 /// \return
 ///
-bool SkinDetector::Init(std::string modelPath)
+bool SkinDetector::InitModel(std::string modelPath)
 {
+    try
+    {
+        cv::Ptr<cv::ml::DTrees> dtree = cv::Algorithm::load<cv::ml::DTrees>(modelPath + m_modelFileName);
+        if (dtree)
+        {
+            m_model = dtree;
+        }
+    }
+    catch(...)
+    {
+
+    }
+
+    return m_model != 0;
+}
+
+///
+/// \brief SkinDetector::SaveModel
+/// \param modelPath
+/// \return
+///
+bool SkinDetector::SaveModel(std::string modelPath)
+{
+    if (m_model)
+    {
+        m_model->save(modelPath + m_modelFileName);
+        return true;
+    }
     return false;
 }
 
 ///
-/// \brief SkinDetector::Learn
+/// \brief SkinDetector::LearnModel
 /// \param dataPath
 /// \return
 ///
-bool SkinDetector::Learn(std::string dataPath)
+bool SkinDetector::LearnModel(std::string dataPath)
 {
     // Read train data: skin and non skin colors
     std::ifstream dataFile(dataPath + m_dataFileName);
@@ -106,7 +139,7 @@ bool SkinDetector::Learn(std::string dataPath)
     dtree->setUse1SERule(false);
     dtree->setTruncatePrunedTree(false);
     dtree->train(trainData);
-    m_dtree = dtree;
+    m_model = dtree;
 
     return true;
 }

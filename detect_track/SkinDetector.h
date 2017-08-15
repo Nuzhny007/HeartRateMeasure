@@ -11,8 +11,9 @@ public:
     SkinDetector();
     ~SkinDetector();
 
-    bool Init(std::string modelPath = "../HeartRateMeasure/data/");
-    bool Learn(std::string dataPath = "../HeartRateMeasure/data/");
+    bool InitModel(std::string modelPath = "../HeartRateMeasure/data/");
+    bool SaveModel(std::string modelPath = "../HeartRateMeasure/data/");
+    bool LearnModel(std::string dataPath = "../HeartRateMeasure/data/");
 
     cv::Mat Detect(cv::Mat image);
 
@@ -25,8 +26,8 @@ private:
     bool m_useRGB;
 
     ///
-    /// \brief m_dtree
-    /// DecisionTree Classifier
+    /// \brief m_model
+    /// Skin Classifier
     ///
-    cv::Ptr<cv::ml::StatModel> m_dtree;
+    cv::Ptr<cv::ml::StatModel> m_model;
 };

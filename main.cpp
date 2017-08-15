@@ -108,12 +108,16 @@ int main(int argc, char* argv[])
     SkinDetector skinDetector;
     if (useSkinDetection)
     {
-        if (!skinDetector.Init("../HeartRateMeasure/data/"))
+        if (!skinDetector.InitModel("../HeartRateMeasure/data/"))
         {
-            useSkinDetection = skinDetector.Learn("../HeartRateMeasure/data/");
+            useSkinDetection = skinDetector.LearnModel("../HeartRateMeasure/data/");
             if (!useSkinDetection)
             {
-                std::cout << "Scin detector wasn't initializad!" << std::endl;
+                std::cout << "Skin detector wasn't initializad!" << std::endl;
+            }
+            else
+            {
+                skinDetector.SaveModel("../HeartRateMeasure/data/");
             }
         }
     }
