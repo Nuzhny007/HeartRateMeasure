@@ -30,7 +30,7 @@ public:
     Gaussian(DATA_T eps, DATA_T alpha)
         :
           m_mean(0),
-          m_var(10),
+          m_var(5),
           m_eps(eps),
           m_alpha(alpha),
           m_lastMeasure(0),
@@ -47,7 +47,7 @@ public:
     Gaussian(MEAS_T measure, DATA_T eps, DATA_T alpha)
         :
           m_mean(measure),
-          m_var(10),
+          m_var(5),
           m_eps(eps),
           m_alpha(alpha),
           m_lastMeasure(measure),
@@ -147,6 +147,10 @@ private:
         if (m_var < 2)
         {
             m_var = 2;
+        }
+        else if (m_var > 10)
+        {
+            m_var = 10;
         }
         m_mean = (1 - m_alpha) * m_mean + m_alpha * measure;
 
@@ -372,7 +376,7 @@ public:
 
         cv::Mat img((oneHeight + 1) * GAUSS_COUNT, MAX_HISTORY, CV_8UC3, cv::Scalar(255, 255, 255));
 
-        for (int i = 0; i < GAUSS_COUNT; ++i)
+        for (int i = 0; i < static_cast<int>(GAUSS_COUNT); ++i)
         {
             if (i)
             {

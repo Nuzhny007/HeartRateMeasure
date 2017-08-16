@@ -54,9 +54,8 @@ cv::Mat SkinDetector::Detect(cv::Mat image)
                 ++maskPtr;
             }
         }
+        cv::imshow("skinMask", m_skinMask);
     }
-
-    cv::imshow("skinMask", m_skinMask);
 
     return m_skinMask;
 }

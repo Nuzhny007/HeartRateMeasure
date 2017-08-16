@@ -124,4 +124,10 @@ private:
     /// \param dst
     ///
     void Unmix(cv::Mat& src, cv::Mat& dst);
+    ///
+    /// \brief Unmix
+    /// \param src
+    /// \param dst
+    ///
+    void Unmix(cv::Mat& src, std::vector<cv::Mat>& dst);
 };
