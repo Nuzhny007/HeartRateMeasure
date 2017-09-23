@@ -34,6 +34,12 @@ public:
 class SignalProcessor
 {
 public:
+    enum RGBFilters
+    {
+        FilterICA,
+        FilterPCA
+    };
+
     ///
     /// \brief SignalProcessor
     /// \param size
@@ -122,12 +128,14 @@ private:
     /// \brief Выделяем первый сигнал (первый собственный вектор)
     /// \param src
     /// \param dst
+    /// \param filterType
     ///
-    void Unmix(cv::Mat& src, cv::Mat& dst);
+    void FilterRGBSignal(cv::Mat& src, cv::Mat& dst, RGBFilters filterType);
     ///
     /// \brief Unmix
     /// \param src
     /// \param dst
+    /// \param filterType
     ///
-    void Unmix(cv::Mat& src, std::vector<cv::Mat>& dst);
+    void FilterRGBSignal(cv::Mat& src, std::vector<cv::Mat>& dst, RGBFilters filterType);
 };

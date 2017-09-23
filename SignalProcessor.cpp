@@ -1,5 +1,6 @@
 #include "SignalProcessor.h"
 #include "FastICA.h"
+#include "pca.h"
 
 ///
 /// \brief SignalProcessor::SignalProcessor
@@ -123,59 +124,78 @@ void SignalProcessor::UniformTimedPoints(int NumSamples, cv::Mat& dst, double& d
         dst = cv::Mat(3, NumSamples, CV_64FC1);
     }
 
-    std::vector<cv::Vec3d> res;
     dt = (m_queue.back().t - m_queue.front().t) / (double)NumSamples;
     TimerTimestamp T = m_queue.front().t;
     for (int i = 0; i < NumSamples; ++i)
     {
         T += dt;
-        res.push_back(FindValueForTime(T));
+
+        cv::Vec3d val = FindValueForTime(T);
+        dst.at<double>(0, i) = val[0];
+        dst.at<double>(1, i) = val[1];
+        dst.at<double>(2, i) = val[2];
     }
     dt /= Freq;
-
-    for (int i = 0; i < NumSamples; ++i)
-    {
-        dst.at<double>(0, i) = res[i][0];
-        dst.at<double>(1, i) = res[i][1];
-        dst.at<double>(2, i) = res[i][2];
-    }
 }
 
 ///
-/// \brief SignalProcessor::Unmix
+/// \brief SignalProcessor::FilterRGBSignal
 /// \param src
 /// \param dst
+/// \param filterType
 ///
-void SignalProcessor::Unmix(cv::Mat& src, cv::Mat& dst)
+void SignalProcessor::FilterRGBSignal(cv::Mat& src, cv::Mat& dst, RGBFilters filterType)
 {
-    cv::Mat W;
-    cv::Mat d;
-    int N = 0; // Номер независимой компоненты, используемой для измерения частоты
-    FastICA fica;
-    fica.apply(src, d, W); // Производим разделение компонентов
-    d.row(N) *= (W.at<double>(N, N) > 0) ? 1 : -1; // Инверсия при отрицательном коэффициенте
-    dst = d.row(N).clone();
+    switch (filterType)
+    {
+    case FilterICA:
+    {
+        cv::Mat W;
+        cv::Mat d;
+        int N = 0; // Номер независимой компоненты, используемой для измерения частоты
+        FastICA fica;
+        fica.apply(src, d, W); // Производим разделение компонентов
+        d.row(N) *= (W.at<double>(N, N) > 0) ? 1 : -1; // Инверсия при отрицательном коэффициенте
+        dst = d.row(N).clone();
+    }
+        break;
+
+    case FilterPCA:
+        MakePCA(src, dst);
+        break;
+    }
     cv::normalize(dst, dst, 0, 1, cv::NORM_MINMAX);
 }
 
 ///
-/// \brief SignalProcessor::Unmix
+/// \brief SignalProcessor::FilterRGBSignal
 /// \param src
 /// \param dst
+/// \param filterType
 ///
-void SignalProcessor::Unmix(cv::Mat& src, std::vector<cv::Mat>& dst)
+void SignalProcessor::FilterRGBSignal(cv::Mat& src, std::vector<cv::Mat>& dst, RGBFilters filterType)
 {
-    cv::Mat W;
-    cv::Mat d;
-    FastICA fica;
-    fica.apply(src, d, W); // Производим разделение компонентов
-
-    dst.resize(d.rows);
-    for (int i = 0; i < d.rows; ++i)
+    switch (filterType)
     {
-        d.row(i) *= (W.at<double>(i, i) > 0) ? 1 : -1; // Инверсия при отрицательном коэффициенте
-        dst[i] = d.row(i).clone();
-        cv::normalize(dst[i], dst[i], 0, 1, cv::NORM_MINMAX);
+    case FilterICA:
+    {
+        cv::Mat W;
+        cv::Mat d;
+        FastICA fica;
+        fica.apply(src, d, W); // Производим разделение компонентов
+
+        dst.resize(d.rows);
+        for (int i = 0; i < d.rows; ++i)
+        {
+            d.row(i) *= (W.at<double>(i, i) > 0) ? 1 : -1; // Инверсия при отрицательном коэффициенте
+            dst[i] = d.row(i).clone();
+            cv::normalize(dst[i], dst[i], 0, 1, cv::NORM_MINMAX);
+        }
+    }
+        break;
+
+    case FilterPCA:
+        break;
     }
 }
 
@@ -202,10 +222,10 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
     double dt;
     UniformTimedPoints(static_cast<int>(m_queue.size()), src, dt, Freq);
 
-#if 0
+#if 1
     // Разделяем сигналы
     cv::Mat dst;
-    Unmix(src, dst);
+    FilterRGBSignal(src, dst, FilterPCA);
 
     // Преобразование Фурье
     cv::Mat res = dst.clone();
@@ -312,7 +332,7 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
 #else
     // Разделяем сигналы
     std::vector<cv::Mat> dstArr;
-    Unmix(src, dstArr);
+    FilterRGBSignal(src, dstArr, FilterICA);
 
     for (size_t di = 0; di < dstArr.size(); ++di)
     {
