@@ -12,6 +12,40 @@
 
 double Freq = cv::getTickFrequency();
 
+///
+/// \brief The RectSelection enum
+///
+enum RectSelection
+{
+    NoneSelection = 0,
+    FaceDetection,
+    ManualSelection
+};
+
+///
+/// \brief SkinInit
+/// \param skinDetector
+/// \return
+///
+bool SkinInit(SkinDetector& skinDetector)
+{
+    bool res = skinDetector.InitModel("../HeartRateMeasure/data/");
+
+    if (!res)
+    {
+        res = skinDetector.LearnModel("../HeartRateMeasure/data/");
+        if (!res)
+        {
+            std::cout << "Skin detector wasn't initializad!" << std::endl;
+        }
+        else
+        {
+            skinDetector.SaveModel("../HeartRateMeasure/data/");
+        }
+    }
+    return res;
+}
+
 // --------------------------------------------------------
 // 
 // --------------------------------------------------------
@@ -38,6 +72,7 @@ int main(int argc, char* argv[])
     int N_pts = 256;
 
     bool useSkinDetection = true;
+    RectSelection selectionType = FaceDetection;
 
     if (argc > 1)
     {
@@ -106,21 +141,11 @@ int main(int argc, char* argv[])
     // Face detector and tracker
     FaceDetector faceDetector;
     SkinDetector skinDetector;
-    if (useSkinDetection)
+    if (!SkinInit(skinDetector))
     {
-        if (!skinDetector.InitModel("../HeartRateMeasure/data/"))
-        {
-            useSkinDetection = skinDetector.LearnModel("../HeartRateMeasure/data/");
-            if (!useSkinDetection)
-            {
-                std::cout << "Skin detector wasn't initializad!" << std::endl;
-            }
-            else
-            {
-                skinDetector.SaveModel("../HeartRateMeasure/data/");
-            }
-        }
+        useSkinDetection = false;
     }
+
     LKTracker faceTracker;
     EulerianMA eulerianMA;
 
@@ -161,31 +186,49 @@ int main(int argc, char* argv[])
             continue;
         }
 
-		// Детект лица
-        cv::Rect face = faceDetector.detect_biggest_face(rgbframe, useSkinDetection);
-        // Tracking
-        if (face.area() > 0)
+        switch (selectionType)
         {
-            faceTracker.ReinitTracker(face);
-            currentRect = faceTracker.GetTrackedRegion();
-        }
-        else
+        case NoneSelection:
+            currentRect = cv::Rect(0, 0, rgbframe.cols, rgbframe.rows);
+            break;
+
+        case FaceDetection:
         {
-            faceTracker.Track(rgbframe);
-            if (!faceTracker.IsLost())
+            // Детект лица
+            cv::Rect face = faceDetector.detect_biggest_face(rgbframe, useSkinDetection);
+            // Tracking
+            if (face.area() > 0)
             {
+                faceTracker.ReinitTracker(face);
                 currentRect = faceTracker.GetTrackedRegion();
             }
             else
             {
-                currentRect = cv::Rect();
+                faceTracker.Track(rgbframe);
+                if (!faceTracker.IsLost())
+                {
+                    currentRect = faceTracker.GetTrackedRegion();
+                }
+                else
+                {
+                    currentRect = cv::Rect();
+                }
             }
+        }
+            break;
+
+        case ManualSelection:
+            break;
         }
 
 		// Если есть объект ненулевой площади вычисляем среднее по цвету
         if (currentRect.area() > 0)
 		{
-            cv::Mat skinMask = skinDetector.Detect(rgbframe(currentRect));
+            cv::Mat skinMask;
+            if (useSkinDetection)
+            {
+                skinMask = skinDetector.Detect(rgbframe(currentRect));
+            }
             cv::Scalar meanVal = cv::mean(frame(currentRect), skinMask.empty() ? cv::noArray() : skinMask);
 
             TimerTimestamp captureTime = useFPS ? ((frameInd * 1000.) / fps) : t1;
@@ -238,16 +281,56 @@ int main(int argc, char* argv[])
         int waitTime = manual ? 0 : (std::max<int>(1, 1000 / fps - t / 1000));
         int k = cv::waitKey(waitTime);
 
-        if (k == 'm' || k == 'M')
+        switch (k)
         {
+        case 'm':
+        case 'M':
             manual = !manual;
-        }
-        else
-        {
-            if (!manual && k > 0)
+            std::cout << "Use manual frame step: " << manual << std::endl;
+            break;
+
+        case 'a':
+        case 'A':
+            useMA = !useMA;
+            if (useMA)
             {
+                eulerianMA.Init(rgbframe, 10, 16, 0.4, 3.0, 30, 1.0);
+            }
+            std::cout << "Use motion magnification: " << useMA << std::endl;
+            break;
+
+        case 27:
+            break;
+
+        case 's':
+        case 'S':
+            useSkinDetection = !useSkinDetection;
+            std::cout << "Use skin detection: " << useSkinDetection << std::endl;
+            break;
+
+        case 'd':
+        case 'D':
+            switch (selectionType)
+            {
+            case NoneSelection:
+                selectionType = FaceDetection;
+                std::cout << "Selection type: without selection" << std::endl;
+                break;
+            case FaceDetection:
+                std::cout << "Selection type: face detection and tracking" << std::endl;
+                selectionType = ManualSelection;
+                break;
+            case ManualSelection:
+                std::cout << "Selection type: manual rectangle selection" << std::endl;
+                selectionType = NoneSelection;
                 break;
             }
+
+            break;
+        }
+        if (k == 27)
+        {
+            break;
         }
 
         ++frameInd;
