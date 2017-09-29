@@ -218,6 +218,10 @@ int main(int argc, char* argv[])
             break;
 
         case ManualSelection:
+            if (currentRect.empty())
+            {
+                currentRect = cv::selectROI(rgbframe, true, false);
+            }
             break;
         }
 
@@ -302,6 +306,12 @@ int main(int argc, char* argv[])
         case 27:
             break;
 
+        case 'r':
+        case 'R':
+            sp.Reset();
+            std::cout << "Reset SignalProcessor" << std::endl;
+            break;
+
         case 's':
         case 'S':
             useSkinDetection = !useSkinDetection;
@@ -319,6 +329,7 @@ int main(int argc, char* argv[])
             case FaceDetection:
                 std::cout << "Selection type: face detection and tracking" << std::endl;
                 selectionType = ManualSelection;
+                currentRect = cv::Rect(0, 0, 0, 0);
                 break;
             case ManualSelection:
                 std::cout << "Selection type: manual rectangle selection" << std::endl;
