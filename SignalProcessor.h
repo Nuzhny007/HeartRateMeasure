@@ -42,9 +42,9 @@ public:
 
     ///
     /// \brief SignalProcessor
-    /// \param size
+    /// \param framesCount
     ///
-    SignalProcessor(size_t size);
+    SignalProcessor(size_t framesCount, RGBFilters filterType);
 
     ///
     /// \brief Reset
@@ -84,6 +84,11 @@ private:
     /// Кол-во элементов в очереди
     ///
     size_t m_size;
+
+    ///
+    /// \brief m_filterType
+    ///
+    RGBFilters m_filterType;
 
     typedef GaussMixture<6, double, double> freq_t;
     ///
@@ -128,14 +133,24 @@ private:
     /// \brief Выделяем первый сигнал (первый собственный вектор)
     /// \param src
     /// \param dst
-    /// \param filterType
     ///
-    void FilterRGBSignal(cv::Mat& src, cv::Mat& dst, RGBFilters filterType);
+    void FilterRGBSignal(cv::Mat& src, cv::Mat& dst);
     ///
     /// \brief Unmix
     /// \param src
     /// \param dst
-    /// \param filterType
     ///
-    void FilterRGBSignal(cv::Mat& src, std::vector<cv::Mat>& dst, RGBFilters filterType);
+    void FilterRGBSignal(cv::Mat& src, std::vector<cv::Mat>& dst);
+
+    ///
+    /// \brief MakeFourier
+    /// \param signal
+    /// \param deltaTime
+    /// \param currFreq
+    /// \param minFreq
+    /// \param maxFreq
+    /// \param draw
+    /// \param img
+    ///
+    void MakeFourier(cv::Mat& signal, double deltaTime, double& currFreq, double& minFreq, double& maxFreq, bool draw, cv::Mat img);
 };

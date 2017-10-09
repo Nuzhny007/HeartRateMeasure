@@ -4,11 +4,12 @@
 
 ///
 /// \brief SignalProcessor::SignalProcessor
-/// \param s
+/// \param framesCount
 ///
-SignalProcessor::SignalProcessor(size_t size)
+SignalProcessor::SignalProcessor(size_t framesCount, RGBFilters filterType)
     :
-      m_size(size),
+      m_size(framesCount),
+      m_filterType(filterType),
       m_minFreq(0),
       m_maxFreq(0),
       m_currFreq(0)
@@ -144,9 +145,9 @@ void SignalProcessor::UniformTimedPoints(int NumSamples, cv::Mat& dst, double& d
 /// \param dst
 /// \param filterType
 ///
-void SignalProcessor::FilterRGBSignal(cv::Mat& src, cv::Mat& dst, RGBFilters filterType)
+void SignalProcessor::FilterRGBSignal(cv::Mat& src, cv::Mat& dst)
 {
-    switch (filterType)
+    switch (m_filterType)
     {
     case FilterICA:
     {
@@ -173,9 +174,9 @@ void SignalProcessor::FilterRGBSignal(cv::Mat& src, cv::Mat& dst, RGBFilters fil
 /// \param dst
 /// \param filterType
 ///
-void SignalProcessor::FilterRGBSignal(cv::Mat& src, std::vector<cv::Mat>& dst, RGBFilters filterType)
+void SignalProcessor::FilterRGBSignal(cv::Mat& src, std::vector<cv::Mat>& dst)
 {
-    switch (filterType)
+    switch (m_filterType)
     {
     case FilterICA:
     {
@@ -200,36 +201,28 @@ void SignalProcessor::FilterRGBSignal(cv::Mat& src, std::vector<cv::Mat>& dst, R
 }
 
 ///
-/// \brief SignalProcessor::MeasureFrequency
+/// \brief SignalProcessor::MakeFourier
+/// \param signal
+/// \param deltaTime
+/// \param currFreq
+/// \param minFreq
+/// \param maxFreq
+/// \param draw
 /// \param img
-/// \param Freq
 ///
-void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
+void SignalProcessor::MakeFourier(
+        cv::Mat& signal,
+        double deltaTime,
+        double& currFreq,
+        double& minFreq,
+        double& maxFreq,
+        bool draw,
+        cv::Mat img
+        )
 {
-    if (m_queue.size() < m_size / 2)
-    {
-        return;
-    }
-    img = 0;
-
-    double scale_x = (double)img.cols / (double)m_queue.size();
-
-    cv::Mat src;
-
-    // Чтобы частота сэмплирования не плавала,
-    // разместим сигнал с временными метками на равномерной сетке.
-
-    double dt;
-    UniformTimedPoints(static_cast<int>(m_queue.size()), src, dt, Freq);
-
-#if 1
-    // Разделяем сигналы
-    cv::Mat dst;
-    FilterRGBSignal(src, dst, FilterPCA);
-
     // Преобразование Фурье
-    cv::Mat res = dst.clone();
-    cv::Mat z = cv::Mat::zeros(1, dst.cols, CV_64FC1);
+    cv::Mat res = signal.clone();
+    cv::Mat z = cv::Mat::zeros(1, signal.cols, CV_64FC1);
     std::vector<cv::Mat> ch;
     ch.push_back(res);
     ch.push_back(z);
@@ -239,25 +232,25 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
     cv::dft(res, res_freq);
     cv::split(res_freq, ch);
     // Мощность спектра
-    cv::magnitude(ch[0], ch[1], dst);
+    cv::magnitude(ch[0], ch[1], signal);
     // Квадрат мощности спектра
-    cv::pow(dst, 2.0, dst);
+    cv::pow(signal, 2.0, signal);
 
     // Теперь частотный фильтр :)
-    cv::line(dst, cv::Point(0, 0), cv::Point(15, 0), cv::Scalar::all(0), 1, CV_AA);
-    cv::line(dst, cv::Point(100, 0), cv::Point(dst.cols - 1, 0), cv::Scalar::all(0), 1, CV_AA);
+    cv::line(signal, cv::Point(0, 0), cv::Point(15, 0), cv::Scalar::all(0), 1, CV_AA);
+    cv::line(signal, cv::Point(100, 0), cv::Point(signal.cols - 1, 0), cv::Scalar::all(0), 1, CV_AA);
 
     // Чтобы все разместилось
-    cv::normalize(dst, dst, 0,1, cv::NORM_MINMAX);
+    cv::normalize(signal, signal, 0, 1, cv::NORM_MINMAX);
 
     // Найдем 2 пика на частотном разложении
     const size_t INDS_COUNT = 2;
     int inds[INDS_COUNT] = { -1 };
     std::deque<double> maxVals;
-    maxVals.push_back(dst.at<double>(0, 0));
-    for (int x = 1; x < dst.cols; ++x)
+    maxVals.push_back(signal.at<double>(0, 0));
+    for (int x = 1; x < signal.cols; ++x)
     {
-        double val = dst.at<double>(0, x);
+        double val = signal.at<double>(0, x);
         int ind = x;
         for (size_t i = 0; i < maxVals.size(); ++i)
         {
@@ -275,178 +268,121 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
     }
 
     // И вычислим частоту
-    m_maxFreq = 60.0 / (1 * dt);
-    m_minFreq = 60.0 / ((dst.cols - 1) * dt);
+    maxFreq = 60.0 / (1 * deltaTime);
+    minFreq = 60.0 / ((signal.cols - 1) * deltaTime);
 
-    m_currFreq = -1;
+    currFreq = -1;
     for (size_t i = 0; i < maxVals.size(); ++i)
     {
         if (inds[i] > 0)
         {
-            double freq = 60.0 / (inds[i] * dt);
+            double freq = 60.0 / (inds[i] * deltaTime);
             m_FF.AddMeasure(freq);
 
-            if (m_currFreq < 0)
+            if (currFreq < 0)
             {
-                m_currFreq = freq;
-
-                std::cout << "dst.size = " << dst.cols << ", maxInd = " << inds[i] << ", dt = " << dt << ", freq [" << m_minFreq << ", " << m_maxFreq << "] = " << m_currFreq << " - " << m_FF.CurrValue() << std::endl;
-
-                std::vector<double> robustFreqs;
-                m_FF.RobustValues(robustFreqs);
-
-                std::cout << "Robust frequences: ";
-                for (auto v : robustFreqs)
-                {
-                    std::cout << v << " ";
-                }
-                std::cout << std::endl;
+                currFreq = freq;
+                std::cout << "signal.size = " << signal.cols << ", maxInd = " << inds[i] << ", deltaTime = " << deltaTime << ", freq [" << minFreq << ", " << maxFreq << "] = " << currFreq << " - " << m_FF.CurrValue() << std::endl;
             }
         }
     }
-    if (m_currFreq < 0)
+    if (currFreq < 0)
     {
-        m_currFreq = 0;
+        currFreq = 0;
     }
-
-    // Изобразим спектр Фурье
-    float S = 50;
-    for (int x = 1; x < dst.cols; ++x)
+    if (draw)
     {
-        bool findInd = false;
+        double scale_x = (double)img.cols / (double)m_queue.size();
 
-        for (auto i : inds)
+        // Изобразим спектр Фурье
+        float S = 50;
+        for (int x = 1; x < signal.cols; ++x)
         {
-            if (i == x)
+            bool findInd = false;
+
+            for (auto i : inds)
             {
-                findInd = true;
-                break;
+                if (i == x)
+                {
+                    findInd = true;
+                    break;
+                }
             }
+
+            cv::line(img,
+                     cv::Point(scale_x * x, img.rows - S * signal.at<double>(x)),
+                     cv::Point(scale_x * x, img.rows),
+                     findInd ? cv::Scalar(255, 0, 255) : cv::Scalar(255, 255, 255));
         }
 
-        cv::line(img,
-                 cv::Point(scale_x * x, img.rows - S * dst.at<double>(x)),
-                 cv::Point(scale_x * x, img.rows),
-                 findInd ? cv::Scalar(255, 0, 255) : cv::Scalar(255, 255, 255));
-    }
-#else
-    // Разделяем сигналы
-    std::vector<cv::Mat> dstArr;
-    FilterRGBSignal(src, dstArr, FilterICA);
+        std::vector<double> robustFreqs;
+        m_FF.RobustValues(robustFreqs);
 
-    for (size_t di = 0; di < dstArr.size(); ++di)
+        std::cout << "Robust frequences: ";
+        for (auto v : robustFreqs)
+        {
+            std::cout << v << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+///
+/// \brief SignalProcessor::MeasureFrequency
+/// \param img
+/// \param Freq
+///
+void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
+{
+    if (m_queue.size() < m_size / 2)
     {
-        auto& dst = dstArr[di];
+        return;
+    }
+    img.setTo(0);
 
-        // Преобразование Фурье
-        cv::Mat res = dst.clone();
-        cv::Mat z = cv::Mat::zeros(1, dst.cols, CV_64FC1);
-        std::vector<cv::Mat> ch;
-        ch.push_back(res);
-        ch.push_back(z);
-        cv::merge(ch, res);
+    cv::Mat src;
 
-        cv::Mat res_freq;
-        cv::dft(res, res_freq);
-        cv::split(res_freq, ch);
-        // Мощность спектра
-        cv::magnitude(ch[0], ch[1], dst);
-        // Квадрат мощности спектра
-        cv::pow(dst, 2.0, dst);
+    // Чтобы частота сэмплирования не плавала,
+    // разместим сигнал с временными метками на равномерной сетке.
 
-        // Теперь частотный фильтр :)
-        cv::line(dst, cv::Point(0, 0), cv::Point(15, 0), cv::Scalar::all(0), 1, CV_AA);
-        cv::line(dst, cv::Point(100, 0), cv::Point(dst.cols - 1, 0), cv::Scalar::all(0), 1, CV_AA);
+    double dt;
+    UniformTimedPoints(static_cast<int>(m_queue.size()), src, dt, Freq);
 
-        // Чтобы все разместилось
-        cv::normalize(dst, dst, 0, 1, cv::NORM_MINMAX);
+    switch (m_filterType)
+    {
+    case FilterPCA:
+    {
+        // Разделяем сигналы
+        cv::Mat dst;
+        FilterRGBSignal(src, dst);
 
-        // Найдем 2 пика на частотном разложении
-        const size_t INDS_COUNT = 2;
-        int inds[INDS_COUNT] = { -1 };
-        std::deque<double> maxVals;
-        maxVals.push_back(dst.at<double>(0, 0));
-        for (int x = 1; x < dst.cols; ++x)
+        MakeFourier(dst, dt, m_currFreq, m_minFreq, m_maxFreq, true, img);
+    }
+        break;
+    case FilterICA:
+    {
+        // Разделяем сигналы
+        std::vector<cv::Mat> dstArr;
+        FilterRGBSignal(src, dstArr);
+
+        for (size_t di = 0; di < dstArr.size(); ++di)
         {
-            double val = dst.at<double>(0, x);
-            int ind = x;
-            for (size_t i = 0; i < maxVals.size(); ++i)
+            auto& dst = dstArr[di];
+
+            double currFreq = 0;
+            double minFreq = 0;
+            double maxFreq = 0;
+            MakeFourier(dst, dt, currFreq, minFreq, maxFreq, di == 0, img);
+
+            if (di == 0)
             {
-                if (maxVals[i] < val)
-                {
-                    std::swap(maxVals[i], val);
-                    std::swap(inds[i], ind);
-                }
+                m_currFreq = currFreq;
+                m_maxFreq = maxFreq;
+                m_minFreq = minFreq;
             }
-            if (maxVals.size() < INDS_COUNT)
-            {
-                maxVals.push_back(val);
-                inds[maxVals.size() - 1] = ind;
-            }
-        }
-
-        // И вычислим частоту
-        double maxFreq = 60.0 / (1 * dt);
-        double minFreq = 60.0 / ((dst.cols - 1) * dt);
-
-        double currFreq = -1;
-        for (size_t i = 0; i < maxVals.size(); ++i)
-        {
-            if (inds[i] > 0)
-            {
-                double freq = 60.0 / (inds[i] * dt);
-                m_FF.AddMeasure(freq);
-
-                if (currFreq < 0)
-                {
-                    currFreq = freq;
-
-                    std::cout << "dst.size = " << dst.cols << ", maxInd = " << inds[i] << ", dt = " << dt << ", freq [" << m_minFreq << ", " << m_maxFreq << "] = " << m_currFreq << " - " << m_FF.CurrValue() << std::endl;
-                }
-            }
-        }
-        if (currFreq < 0)
-        {
-            currFreq = 0;
-        }
-        if (di == 0)
-        {
-            m_currFreq = currFreq;
-            m_maxFreq = maxFreq;
-            m_minFreq = minFreq;
-
-            // Изобразим спектр Фурье
-            float S = 50;
-            for (int x = 1; x < dst.cols; ++x)
-            {
-                bool findInd = false;
-
-                for (auto i : inds)
-                {
-                    if (i == x)
-                    {
-                        findInd = true;
-                        break;
-                    }
-                }
-
-                cv::line(img,
-                         cv::Point(scale_x * x, img.rows - S * dst.at<double>(x)),
-                         cv::Point(scale_x * x, img.rows),
-                         findInd ? cv::Scalar(255, 0, 255) : cv::Scalar(255, 255, 255));
-            }
-
-            std::vector<double> robustFreqs;
-            m_FF.RobustValues(robustFreqs);
-
-            std::cout << "Robust frequences: ";
-            for (auto v : robustFreqs)
-            {
-                std::cout << v << " ";
-            }
-            std::cout << std::endl;
         }
     }
-#endif
+        break;
+    }
     m_FF.Visualize();
 }
