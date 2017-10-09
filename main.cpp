@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
     EulerianMA eulerianMA;
 
 	// Создаем анализатор
-    SignalProcessor sp(N_pts, SignalProcessor::FilterICA);
+    SignalProcessor sp(N_pts, SignalProcessor::FilterPCA);
 
     double tick_freq = cv::getTickFrequency();
 

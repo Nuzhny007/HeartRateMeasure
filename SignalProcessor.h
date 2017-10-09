@@ -153,4 +153,11 @@ private:
     /// \param img
     ///
     void MakeFourier(cv::Mat& signal, double deltaTime, double& currFreq, double& minFreq, double& maxFreq, bool draw, cv::Mat img);
+
+    ///
+    /// \brief DrawSignal
+    /// \param signal
+    /// \param deltaTime
+    ///
+    void DrawSignal(cv::Mat signal, double deltaTime);
 };

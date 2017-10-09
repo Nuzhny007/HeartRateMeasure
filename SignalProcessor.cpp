@@ -356,9 +356,12 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
         cv::Mat dst;
         FilterRGBSignal(src, dst);
 
+        DrawSignal(dst, dt);
+
         MakeFourier(dst, dt, m_currFreq, m_minFreq, m_maxFreq, true, img);
     }
         break;
+
     case FilterICA:
     {
         // Разделяем сигналы
@@ -379,10 +382,50 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
                 m_currFreq = currFreq;
                 m_maxFreq = maxFreq;
                 m_minFreq = minFreq;
+
+                DrawSignal(dst, dt);
             }
         }
     }
         break;
     }
     m_FF.Visualize();
+}
+
+///
+/// \brief SignalProcessor::DrawSignal
+/// \param signal
+/// \param deltaTime
+///
+void SignalProcessor::DrawSignal(cv::Mat signal, double deltaTime)
+{
+   cv::Mat img(200, 512, CV_8UC3, cv::Scalar::all(255));
+
+   cv::Mat snorm;
+   cv::normalize(signal, snorm, img.rows, 0, cv::NORM_MINMAX);
+
+   double timeSum = 0;
+   double v0 = snorm.at<double>(0, 0);
+   for (int i = 1; i < snorm.cols; ++i)
+   {
+       double v1 = snorm.at<double>(0, i);
+
+       cv::Point pt0(((i - 1) * img.cols) / signal.cols, img.rows - v0);
+       cv::Point pt1((i * img.cols) / signal.cols, img.rows - v1);
+
+       cv::line(img, pt0, pt1, cv::Scalar(0, 0, 0));
+
+       int dtPrev = static_cast<int>(1000. * timeSum) / 1000;
+       timeSum += deltaTime;
+       int dtCurr = static_cast<int>(1000. * timeSum) / 1000;
+       if (dtCurr > dtPrev)
+       {
+           cv::line(img, cv::Point(pt1.x, 0), cv::Point(pt1.x, img.rows - 1), cv::Scalar(0, 150, 0));
+       }
+
+       v0 = v1;
+   }
+
+   cv::namedWindow("signal", cv::WINDOW_AUTOSIZE);
+   cv::imshow("signal", img);
 }
