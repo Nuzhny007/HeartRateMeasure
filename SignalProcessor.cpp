@@ -247,24 +247,37 @@ void SignalProcessor::MakeFourier(
     const size_t INDS_COUNT = 2;
     int inds[INDS_COUNT] = { -1 };
     std::deque<double> maxVals;
-    maxVals.push_back(signal.at<double>(0, 0));
-    for (int x = 1; x < signal.cols; ++x)
+
+    auto IsLocalMax = [](double v1, double v2, double v3) -> bool
     {
-        double val = signal.at<double>(0, x);
+        return (v2 > v1) && (v2 > v3);
+    };
+
+    double v1 = signal.at<double>(0, 0);
+    double v2 = signal.at<double>(0, 1);
+
+    for (int x = 1; x < signal.cols - 1; ++x)
+    {
+        double v3 = signal.at<double>(0, x + 1);
         int ind = x;
-        for (size_t i = 0; i < maxVals.size(); ++i)
+        if (IsLocalMax(v1, v2, v3))
         {
-            if (maxVals[i] < val)
+            for (size_t i = 0; i < maxVals.size(); ++i)
             {
-                std::swap(maxVals[i], val);
-                std::swap(inds[i], ind);
+                if (maxVals[i] < v2)
+                {
+                    std::swap(maxVals[i], v2);
+                    std::swap(inds[i], ind);
+                }
+            }
+            if (maxVals.size() < INDS_COUNT)
+            {
+                maxVals.push_back(v2);
+                inds[maxVals.size() - 1] = ind;
             }
         }
-        if (maxVals.size() < INDS_COUNT)
-        {
-            maxVals.push_back(val);
-            inds[maxVals.size() - 1] = ind;
-        }
+        v1 = v2;
+        v2 = v3;
     }
 
     // И вычислим частоту
