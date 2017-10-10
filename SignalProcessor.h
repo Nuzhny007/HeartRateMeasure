@@ -159,5 +159,5 @@ private:
     /// \param signal
     /// \param deltaTime
     ///
-    void DrawSignal(cv::Mat signal, double deltaTime);
+    void DrawSignal(const std::vector<cv::Mat>& signal, double deltaTime);
 };
