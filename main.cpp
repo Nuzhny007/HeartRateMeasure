@@ -50,11 +50,12 @@ bool SkinInit(SkinDetector& skinDetector)
 ///
 const char* keys =
 {
-    "{ @1               |../data/face.mp4    | Video file or web camera index | }"
-    "{ s  size          |256                 | Sample size (power of 2) | }"
-    "{ ma motion_amppfl |0                   | Use or not motion ampflification | }"
-    "{ sd skin          |0                   | Use or not skin detection | }"
-    "{ g gpu            |0                   | Use OpenCL acceleration | }"
+    "{ @1              |../data/face.mp4    | Video file or web camera index | }"
+    "{ s  size         |256                 | Sample size (power of 2) | }"
+    "{ ma motion_ampfl |0                   | Use or not motion ampflification | }"
+    "{ sd skin         |0                   | Use or not skin detection | }"
+    "{ ft filter       |ica                 | Filter type: pca or ica | }"
+    "{ g gpu           |0                   | Use OpenCL acceleration | }"
 };
 
 ///
@@ -80,13 +81,15 @@ int main(int argc, char* argv[])
     std::string fileName = parser.get<std::string>(0);
 
     // Use motion ampflifacation
-    bool useMA = parser.get<int>("motion_amppfl") != 0;
+    bool useMA = parser.get<int>("motion_ampfl") != 0;
 
     // Количество измерений в графике
     int sampleSize = parser.get<int>("size");
 
     bool useSkinDetection = parser.get<int>("skin") != 0;;
     RectSelection selectionType = FaceDetection;
+
+    SignalProcessor::RGBFilters filterType = (parser.get<std::string>("filter") == "ica") ? SignalProcessor::FilterICA : SignalProcessor::FilterPCA;
 
     cv::VideoCapture capture;
     if (fileName.size() > 1)
@@ -130,7 +133,8 @@ int main(int argc, char* argv[])
     int frameHeight = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
     cv::Mat I(std::min(100, frameHeight), std::min(640, frameWidth), CV_8UC3, cv::Scalar::all(0));
 
-    cv::VideoWriter vw(fileName + "_" + argv[2] + "_" + argv[3] + "_result.avi", CV_FOURCC('X', '2', '6', '4'), fps, cv::Size(useMA ? (2 * frameWidth) : frameWidth, frameHeight), true);
+    std::string resFileName = fileName + "_" + std::to_string(sampleSize) + "_" + (useMA ? "ma" : "noma") + "_" + parser.get<std::string>("filter") + "_result.avi";
+    cv::VideoWriter vw(resFileName, CV_FOURCC('X', '2', '6', '4'), fps, cv::Size(useMA ? (2 * frameWidth) : frameWidth, frameHeight), true);
 
 	// Прямоугольник с лицом 
     cv::Rect currentRect;
@@ -147,7 +151,7 @@ int main(int argc, char* argv[])
     EulerianMA eulerianMA;
 
 	// Создаем анализатор
-    SignalProcessor sp(sampleSize, SignalProcessor::FilterICA);
+    SignalProcessor sp(sampleSize, filterType);
 
     double tick_freq = cv::getTickFrequency();
 
