@@ -244,7 +244,7 @@ void SignalProcessor::MakeFourier(
     cv::normalize(signal, signal, 0, 1, cv::NORM_MINMAX);
 
     // Найдем 2 пика на частотном разложении
-    const size_t INDS_COUNT = 2;
+    const size_t INDS_COUNT = 3;
     int inds[INDS_COUNT] = { -1 };
     std::deque<double> maxVals;
 
