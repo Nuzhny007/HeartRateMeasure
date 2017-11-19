@@ -9,16 +9,23 @@
 /// \param src
 /// \param dst
 ///
-void rgb2ntsc(cv::Mat& src, cv::Mat& dst)
+void rgb2ntsc(cv::Mat img)
 {
-    for (int y = 0; y < src.rows; y++)
+    for (int y = 0; y < img.rows; ++y)
     {
-        for (int x = 0; x < src.cols; x++)
+        float* pimg = img.ptr<float>(y);
+
+        for (int x = 0; x < img.cols; ++x)
         {
-            cv::Vec3f i = src.at<cv::Vec3f>(y, x);
-            dst.at<cv::Vec3f>(y, x).val[2] = (0.299 * i.val[2] + 0.587 * i.val[1] + 0.114 * i.val[0]) ;
-            dst.at<cv::Vec3f>(y, x).val[1] = (0.595716 * i.val[2] - 0.274453 * i.val[1] - 0.321263 * i.val[0]);
-            dst.at<cv::Vec3f>(y, x).val[0] = (0.211456 * i.val[2] - 0.522591 * i.val[1] + 0.311135 * i.val[0]);
+            float v0 = pimg[0];
+            float v1 = pimg[1];
+            float v2 = pimg[2];
+
+            pimg[2] = (0.299 * v2 + 0.587 * v1 + 0.114 * v0) ;
+            pimg[1] = (0.595716 * v2 - 0.274453 * v1 - 0.321263 * v0);
+            pimg[0] = (0.211456 * v2 - 0.522591 * v1 + 0.311135 * v0);
+
+            pimg += 3;
         }
     }
 }
@@ -29,16 +36,23 @@ void rgb2ntsc(cv::Mat& src, cv::Mat& dst)
 /// \param src
 /// \param dst
 ///
-void ntsc2rgb(cv::Mat& src, cv::Mat& dst)
+void ntsc2rgb(cv::Mat img)
 {
-    for (int y = 0; y < src.rows; y++)
+    for (int y = 0; y < img.rows; ++y)
     {
-        for (int x = 0; x < src.cols; x++)
+        float* pimg = img.ptr<float>(y);
+
+        for (int x = 0; x < img.cols; ++x)
         {
-            cv::Vec3f i = src.at<cv::Vec3f>(y, x);
-            dst.at<cv::Vec3f>(y, x).val[2] = (1.0 * i.val[2] + 0.9563 * i.val[1] + 0.621 * i.val[0]);
-            dst.at<cv::Vec3f>(y, x).val[1] = (1.0 * i.val[2] - 0.2721 * i.val[1] - 0.6474 * i.val[0]);
-            dst.at<cv::Vec3f>(y, x).val[0] = (1.0 * i.val[2] - 1.107 * i.val[1] + 1.7046 * i.val[0]);
+            float v0 = pimg[0];
+            float v1 = pimg[1];
+            float v2 = pimg[2];
+
+            pimg[2] = (1.0 * v2 + 0.9563 * v1 + 0.621 * v0);
+            pimg[1] = (1.0 * v2 - 0.2721 * v1 - 0.6474 * v0);
+            pimg[0] = (1.0 * v2 - 1.107 * v1 + 1.7046 * v0);
+
+            pimg += 3;
         }
     }
 
@@ -247,7 +261,7 @@ void EulerianMA::Init(
 
     cv::Mat frame;
     rgbframe.convertTo(frame, CV_32FC3, 1.0 / 255.0);
-    rgb2ntsc(frame, frame);
+    rgb2ntsc(frame);
 
     lappyr(frame, 0, pyr, pind);
 
@@ -308,7 +322,7 @@ cv::Mat EulerianMA::Process(cv::Mat rgbframe)
 
     cv::Mat frame;
     rgbframe.convertTo(frame,CV_32FC3, 1.0 / 255.0);
-    rgb2ntsc(frame, frame);
+    rgb2ntsc(frame);
 
     lappyr(frame, 0, pyr, pind);
 
@@ -365,7 +379,7 @@ cv::Mat EulerianMA::Process(cv::Mat rgbframe)
     cv::merge(ch, output);
 
     output += frame;
-    ntsc2rgb(output, output);
+    ntsc2rgb(output);
 
     for (int row = 0; row < output.rows; row++)
     {

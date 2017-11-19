@@ -72,6 +72,10 @@ bool LKTracker::Trackf2f(
         std::vector<cv::Point2f>& points2
         )
 {
+    //cv::Size subPixWinSize(3, 3);
+    //cv::cornerSubPix(img1, points1, subPixWinSize, cv::Size(-1,-1), term_criteria);
+    //cv::cornerSubPix(img2, points2, subPixWinSize, cv::Size(-1,-1), term_criteria);
+
     //Forward-Backward tracking
     cv::calcOpticalFlowPyrLK(img1, img2, points1, points2, status, similarity, window_size, level, term_criteria, lambda, 0);
     cv::calcOpticalFlowPyrLK(img2, img1, points2, pointsFB, FB_status, FB_error, window_size, level, term_criteria, lambda, 0);
@@ -261,13 +265,15 @@ void LKTracker::BbPoints(
         const cv::Rect& bb
         )
 {
-    points.clear();
-
-    int max_pts = 10; // Number of points on each dimention
+    int max_pts = 20; // Number of points on each dimention
     int margin_h = 0; // horizontal margin
     int margin_v = 0; // vertial margin
     int stepx = ceilf((float)(bb.width-2.0*margin_h)/(float)max_pts);
     int stepy = ceilf((float)(bb.height-2.0*margin_v)/(float)max_pts);
+
+    points.clear();
+    points.reserve(max_pts * max_pts);
+
     for (int y = bb.y + margin_v; y < bb.y + bb.height - margin_v; y += stepy)
     {
         for (int x = bb.x + margin_h; x < bb.x + bb.width - margin_h; x += stepx)

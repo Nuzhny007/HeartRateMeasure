@@ -347,7 +347,7 @@ void SignalProcessor::MakeFourier(
 ///
 void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
 {
-    if (m_queue.size() < m_size / 2)
+    if (m_queue.size() < m_size)
     {
         return;
     }
