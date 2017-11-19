@@ -30,7 +30,7 @@ FaceDetector::~FaceDetector()
 //------------------------------------------------------
 //
 //------------------------------------------------------
-cv::Rect FaceDetector::detect_biggest_face(cv::Mat& image, bool originalFace)
+cv::Rect FaceDetector::detect_biggest_face(cv::UMat image, bool originalFace)
 {
     cv::Rect res(0, 0, 0, 0);
 
@@ -43,7 +43,7 @@ cv::Rect FaceDetector::detect_biggest_face(cv::Mat& image, bool originalFace)
     bool findLargestObject = true;
     bool filterRects = true;
 
-    cv::Mat im;
+    cv::UMat im;
     if (image.channels() == 3)
     {
         cv::cvtColor(image, im, cv::COLOR_BGR2GRAY);
