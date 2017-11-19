@@ -9,6 +9,7 @@
 #include "detect_track/LKTracker.h"
 #include "eulerian_ma/EulerianMA.h"
 
+#include <opencv2/core/ocl.hpp>
 
 double Freq = cv::getTickFrequency();
 
@@ -46,45 +47,46 @@ bool SkinInit(SkinDetector& skinDetector)
     return res;
 }
 
-// --------------------------------------------------------
-// 
-// --------------------------------------------------------
+///
+const char* keys =
+{
+    "{ @1               |../data/face.mp4    | Video file or web camera index | }"
+    "{ s  size          |256                 | Sample size (power of 2) | }"
+    "{ ma motion_amppfl |0                   | Use or not motion ampflification | }"
+    "{ sd skin          |0                   | Use or not skin detection | }"
+    "{ g gpu            |0                   | Use OpenCL acceleration | }"
+};
+
+///
+/// \brief main
+/// \param argc
+/// \param argv
+/// \return
+///
 int main(int argc, char* argv[])
 {
-
 	// чтобы писать по-русски
 	setlocale(LC_ALL, "Russian");
+
+    cv::CommandLineParser parser(argc, argv, keys);
+
+    bool useOCL = parser.get<int>("gpu") ? 1 : 0;
+    cv::ocl::setUseOpenCL(useOCL);
+    std::cout << (cv::ocl::useOpenCL() ? "OpenCL is enabled" : "OpenCL not used") << std::endl;
 
 	// Инициализация камеры
     bool useFPS = true;
     double fps = 25;
-    std::string fileName = "../data/face.mp4";
+    std::string fileName = parser.get<std::string>(0);
 
     // Use motion ampflifacation
-    bool useMA = true;
+    bool useMA = parser.get<int>("motion_amppfl") != 0;
 
     // Количество измерений в графике
-    int N_pts = 256;
+    int sampleSize = parser.get<int>("size");
 
-    bool useSkinDetection = true;
+    bool useSkinDetection = parser.get<int>("skin") != 0;;
     RectSelection selectionType = FaceDetection;
-
-    if (argc > 1)
-    {
-        fileName = argv[1];
-    }
-    if (argc > 2)
-    {
-        N_pts = atoi(argv[2]);
-    }
-    if (argc > 3)
-    {
-        useMA = atoi(argv[3]) > 0;
-    }
-    if (argc > 4)
-    {
-        useSkinDetection = atoi(argv[4]) > 0;
-    }
 
     cv::VideoCapture capture;
     if (fileName.size() > 1)
@@ -145,7 +147,7 @@ int main(int argc, char* argv[])
     EulerianMA eulerianMA;
 
 	// Создаем анализатор
-    SignalProcessor sp(N_pts, SignalProcessor::FilterICA);
+    SignalProcessor sp(sampleSize, SignalProcessor::FilterICA);
 
     double tick_freq = cv::getTickFrequency();
 
