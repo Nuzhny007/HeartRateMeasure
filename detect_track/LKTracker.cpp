@@ -261,8 +261,10 @@ void LKTracker::BbPoints(
         const cv::Rect& bb
         )
 {
+    points.clear();
+
     int max_pts = 10; // Number of points on each dimention
-    int margin_h = 0;	// horizontal margin
+    int margin_h = 0; // horizontal margin
     int margin_v = 0; // vertial margin
     int stepx = ceilf((float)(bb.width-2.0*margin_h)/(float)max_pts);
     int stepy = ceilf((float)(bb.height-2.0*margin_v)/(float)max_pts);

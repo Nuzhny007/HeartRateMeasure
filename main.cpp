@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
         fps = capture.get(cv::CAP_PROP_FPS);
         Freq = 1000.;
     }
-    std::cout << "Time frequency = " << Freq << std::endl;
+    std::cout << "Time frequency = " << Freq << ", fps = " << fps << std::endl;
 
 	// Создаем окошко
     cv::namedWindow("output", cv::WINDOW_NORMAL);
@@ -237,7 +237,7 @@ int main(int argc, char* argv[])
             cv::Scalar meanVal = cv::mean(frame(currentRect), skinMask.empty() ? cv::noArray() : skinMask);
 
             TimerTimestamp captureTime = useFPS ? ((frameInd * 1000.) / fps) : t1;
-            std::cout << "Capture time = " << captureTime << std::endl;
+            std::cout << frameInd << ": capture time = " << captureTime << std::endl;
             sp.AddMeasure(captureTime, cv::Vec3d(meanVal.val));
             sp.MeasureFrequency(I, Freq);
 		}
