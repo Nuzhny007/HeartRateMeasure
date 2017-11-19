@@ -51,11 +51,6 @@ bool SkinInit(SkinDetector& skinDetector)
 // --------------------------------------------------------
 int main(int argc, char* argv[])
 {
-#ifdef USE_GPU
-    // инициализация GPU
-    cv::cuda::setDevice(0);
-    cv::cuda::printShortCudaDeviceInfo(cv::cuda::getDevice());
-#endif
 
 	// чтобы писать по-русски
 	setlocale(LC_ALL, "Russian");

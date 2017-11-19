@@ -23,12 +23,6 @@ elseif (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /W4" CACHE STRING COMPILE_FLAGS FORCE)
 endif()
 
-option(USE_GPU "Should the GPU be used?" OFF)
-if(USE_GPU)
-    add_definitions(-DUSE_GPU)
-endif(USE_GPU)
-
-
 include_directories(
 ${OpenCV_INCLUDE_DIRS}
 "/usr/include/eigen3"
