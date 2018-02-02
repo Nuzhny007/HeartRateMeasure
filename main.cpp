@@ -56,6 +56,7 @@ const char* keys =
     "{ sd skin         |0                   | Use or not skin detection | }"
     "{ ft filter       |ica                 | Filter type: pca or ica | }"
     "{ g gpu           |0                   | Use OpenCL acceleration | }"
+    "{ o out           |0                   | Write result to disk | }"
 };
 
 ///
@@ -133,8 +134,12 @@ int main(int argc, char* argv[])
     int frameHeight = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
     cv::Mat I(std::min(100, frameHeight), std::min(640, frameWidth), CV_8UC3, cv::Scalar::all(0));
 
-    std::string resFileName = fileName + "_" + std::to_string(sampleSize) + "_" + (useMA ? "ma" : "noma") + "_" + parser.get<std::string>("filter") + "_result.avi";
-    cv::VideoWriter vw(resFileName, CV_FOURCC('X', '2', '6', '4'), fps, cv::Size(useMA ? (2 * frameWidth) : frameWidth, frameHeight), true);
+    cv::VideoWriter videoWiter;
+    if (parser.get<int>("out") > 0)
+    {
+        std::string resFileName = fileName + "_" + std::to_string(sampleSize) + "_" + (useMA ? "ma" : "noma") + "_" + parser.get<std::string>("filter") + "_result.avi";
+        videoWiter.open(resFileName, CV_FOURCC('X', '2', '6', '4'), fps, cv::Size(useMA ? (2 * frameWidth) : frameWidth, frameHeight), true);
+    }
 
 	// Прямоугольник с лицом 
     cv::Rect currentRect;
@@ -264,18 +269,18 @@ int main(int argc, char* argv[])
             cv::hconcat(rgbframe, frame, outImg);
             cv::imshow("output", outImg);
 
-            if (vw.isOpened())
+            if (videoWiter.isOpened())
             {
-                vw << outImg;
+                videoWiter << outImg;
             }
         }
         else
         {
             cv::imshow("output", frame);
 
-            if (vw.isOpened())
+            if (videoWiter.isOpened())
             {
-                vw << frame;
+                videoWiter << frame;
             }
         }
 
