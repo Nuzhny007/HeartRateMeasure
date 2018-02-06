@@ -4,7 +4,7 @@ project (HeartRateMeasure)
 
 FIND_PACKAGE(OpenCV 3.0 REQUIRED)
 
-FIND_PACKAGE(Eigen)
+FIND_PACKAGE(Eigen3)
 
 unset(CMAKE_CXX_FLAGS CACHE)
 
@@ -23,10 +23,13 @@ elseif (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /W4" CACHE STRING COMPILE_FLAGS FORCE)
 endif()
 
-include_directories(
-${OpenCV_INCLUDE_DIRS}
-"/usr/include/eigen3"
-)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+if (EIGEN3_FOUND)
+  INCLUDE_DIRECTORIES("${EIGEN3_INCLUDE_DIR}")
+else()
+  INCLUDE_DIRECTORIES("/usr/include/eigen3")
+endif()
 
 # ----------------------------------------------------------------------
 set(SOURCE
