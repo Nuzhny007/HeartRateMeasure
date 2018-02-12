@@ -76,7 +76,7 @@ public:
     /// \param img
     /// \param Freq
     ///
-    void MeasureFrequency(cv::Mat& img, double Freq);
+    void MeasureFrequency(cv::Mat& img, double Freq, int frameInd);
 
 private:
     ///
@@ -159,5 +159,5 @@ private:
     /// \param signal
     /// \param deltaTime
     ///
-    void DrawSignal(const std::vector<cv::Mat>& signal, double deltaTime);
+    void DrawSignal(const std::vector<cv::Mat>& signal, double deltaTime, bool saveResult, int frameInd);
 };

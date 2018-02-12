@@ -369,7 +369,7 @@ public:
     ///
     /// \brief Visualize
     ///
-    void Visualize()
+    void Visualize(bool saveResult, int frameInd)
     {
         const int oneHeight = 100;
         const DATA_T maxVal = 200;
@@ -426,6 +426,12 @@ public:
         }
 
         cv::imshow("mixture", img);
+
+        if (saveResult)
+        {
+            std::string fileName = "mixture/" + std::to_string(frameInd) + ".png";
+            cv::imwrite(fileName, img);
+        }
     }
 
 private:
