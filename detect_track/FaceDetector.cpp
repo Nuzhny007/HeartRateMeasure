@@ -8,7 +8,11 @@ FaceDetector::FaceDetector()
       m_kw(0.3),
       m_kh(0.3)
 {
+#if (defined WIN32 || defined _WIN32 || defined WINCE || defined __CYGWIN__)
+	std::string fileName = "haarcascade_frontalface_alt2.xml";
+#else
 	std::string fileName = "../HeartRateMeasure/data/haarcascades/haarcascade_frontalface_alt2.xml";
+#endif
     if (m_cascade.empty())
     {
 		m_cascade.load(fileName);

@@ -30,18 +30,24 @@ enum RectSelection
 ///
 bool SkinInit(SkinDetector& skinDetector)
 {
-    bool res = skinDetector.InitModel("../HeartRateMeasure/data/");
+#if (defined WIN32 || defined _WIN32 || defined WINCE || defined __CYGWIN__)
+	std::string skinPath("");
+#else
+	std::string skinPath("../HeartRateMeasure/data/");
+#endif
+
+	bool res = skinDetector.InitModel(skinPath);
 
     if (!res)
     {
-        res = skinDetector.LearnModel("../HeartRateMeasure/data/");
+		res = skinDetector.LearnModel(skinPath);
         if (!res)
         {
             std::cout << "Skin detector wasn't initializad!" << std::endl;
         }
         else
         {
-            skinDetector.SaveModel("../HeartRateMeasure/data/");
+			skinDetector.SaveModel(skinPath);
         }
     }
     return res;
