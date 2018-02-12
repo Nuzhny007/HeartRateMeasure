@@ -15,7 +15,7 @@ public:
     bool SaveModel(std::string modelPath = "../HeartRateMeasure/data/");
     bool LearnModel(std::string dataPath = "../HeartRateMeasure/data/");
 
-    cv::Mat Detect(cv::Mat image);
+    cv::Mat Detect(cv::Mat image, bool saveResult, int frameInd);
 
 private:
     cv::Mat m_skinMask;

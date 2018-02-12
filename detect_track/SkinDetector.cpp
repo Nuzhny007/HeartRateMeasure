@@ -26,7 +26,7 @@ SkinDetector::~SkinDetector()
 /// \param image
 /// \return
 ///
-cv::Mat SkinDetector::Detect(cv::Mat image)
+cv::Mat SkinDetector::Detect(cv::Mat image, bool saveResult, int frameInd)
 {
     if (m_skinMask.size() != image.size())
     {
@@ -55,6 +55,12 @@ cv::Mat SkinDetector::Detect(cv::Mat image)
             }
         }
         cv::imshow("skinMask", m_skinMask);
+
+        if (saveResult)
+        {
+            std::string fileName = "skinMask/" + std::to_string(frameInd) + ".png";
+            cv::imwrite(fileName, m_skinMask);
+        }
     }
 
     return m_skinMask;

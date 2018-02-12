@@ -138,7 +138,19 @@ int main(int argc, char* argv[])
     if (parser.get<int>("out") > 0)
     {
         std::string resFileName = fileName + "_" + std::to_string(sampleSize) + "_" + (useMA ? "ma" : "noma") + "_" + parser.get<std::string>("filter") + "_result.avi";
-        videoWiter.open(resFileName, CV_FOURCC('X', '2', '6', '4'), fps, cv::Size(useMA ? (2 * frameWidth) : frameWidth, frameHeight), true);
+        videoWiter.open(resFileName, CV_FOURCC('H', 'F', 'Y', 'U'), fps, cv::Size(useMA ? (2 * frameWidth) : frameWidth, frameHeight), true);
+        if (!videoWiter.isOpened())
+        {
+            std::cerr << "Can't create " << resFileName << std::endl;
+        }
+        else
+        {
+            std::cout << resFileName << " was created" << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "Without result file" << std::endl;
     }
 
 	// Прямоугольник с лицом 
@@ -237,14 +249,14 @@ int main(int argc, char* argv[])
             cv::Mat skinMask;
             if (useSkinDetection)
             {
-                skinMask = skinDetector.Detect(rgbframe(currentRect));
+                skinMask = skinDetector.Detect(rgbframe(currentRect), true, frameInd);
             }
             cv::Scalar meanVal = cv::mean(frame(currentRect), skinMask.empty() ? cv::noArray() : skinMask);
 
             TimerTimestamp captureTime = useFPS ? ((frameInd * 1000.) / fps) : t1;
             std::cout << frameInd << ": capture time = " << captureTime << std::endl;
             sp.AddMeasure(captureTime, cv::Vec3d(meanVal.val));
-            sp.MeasureFrequency(I, Freq);
+            sp.MeasureFrequency(I, Freq, frameInd);
 		}
         else
         {

@@ -345,7 +345,7 @@ void SignalProcessor::MakeFourier(
 /// \param img
 /// \param Freq
 ///
-void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
+void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq, int frameInd)
 {
     if (m_queue.size() < m_size)
     {
@@ -369,7 +369,7 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
         cv::Mat dst;
         FilterRGBSignal(src, dst);
 
-        DrawSignal(std::vector<cv::Mat>({ dst }), dt);
+        DrawSignal(std::vector<cv::Mat>({ dst }), dt, true, frameInd);
 
         MakeFourier(dst, dt, m_currFreq, m_minFreq, m_maxFreq, true, img);
     }
@@ -381,7 +381,7 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
         std::vector<cv::Mat> dstArr;
         FilterRGBSignal(src, dstArr);
 
-        DrawSignal(dstArr, dt);
+        DrawSignal(dstArr, dt, true, frameInd);
 
         for (size_t di = 0; di < dstArr.size(); ++di)
         {
@@ -402,7 +402,7 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
     }
         break;
     }
-    m_FF.Visualize();
+    m_FF.Visualize(true, frameInd);
 }
 
 ///
@@ -410,7 +410,7 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq)
 /// \param signal
 /// \param deltaTime
 ///
-void SignalProcessor::DrawSignal(const std::vector<cv::Mat>& signal, double deltaTime)
+void SignalProcessor::DrawSignal(const std::vector<cv::Mat>& signal, double deltaTime, bool saveResult, int frameInd)
 {
     const int wndHeight = 200;
     cv::Mat img(signal.size() * wndHeight, 512, CV_8UC3, cv::Scalar::all(255));
@@ -446,4 +446,10 @@ void SignalProcessor::DrawSignal(const std::vector<cv::Mat>& signal, double delt
 
     cv::namedWindow("signal", cv::WINDOW_AUTOSIZE);
     cv::imshow("signal", img);
+
+    if (saveResult)
+    {
+        std::string fileName = "signal/" + std::to_string(frameInd) + ".png";
+        cv::imwrite(fileName, img);
+    }
 }
