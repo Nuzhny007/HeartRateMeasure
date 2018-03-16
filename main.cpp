@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 
     cv::CommandLineParser parser(argc, argv, keys);
 
-    bool useOCL = parser.get<int>("gpu") ? 1 : 0;
+    bool useOCL = parser.get<int>("gpu") != 0;
     cv::ocl::setUseOpenCL(useOCL);
     std::cout << (cv::ocl::useOpenCL() ? "OpenCL is enabled" : "OpenCL not used") << std::endl;
 
@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
     cv::Rect currentRect;
 
     // Face detector and tracker
-    FaceDetector faceDetector;
+    FaceDetectorDNN faceDetector(useOCL);
     SkinDetector skinDetector;
     if (!SkinInit(skinDetector))
     {
@@ -219,7 +219,7 @@ int main(int argc, char* argv[])
         case FaceDetection:
         {
             // Детект лица
-            cv::Rect face = faceDetector.detect_biggest_face(rgbframe.getUMat(cv::ACCESS_READ), useSkinDetection);
+            cv::Rect face = faceDetector.DetectBiggestFace(rgbframe.getUMat(cv::ACCESS_READ), useSkinDetection);
             // Tracking
             if (face.area() > 0)
             {
