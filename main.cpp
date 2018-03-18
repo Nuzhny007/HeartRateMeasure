@@ -1,6 +1,7 @@
 ﻿#include <deque>
 #include <iostream>
 #include <string>
+#include <memory>
 
 #include "SignalProcessor.h"
 
@@ -163,7 +164,7 @@ int main(int argc, char* argv[])
     cv::Rect currentRect;
 
     // Face detector and tracker
-    FaceDetectorDNN faceDetector(useOCL);
+    std::unique_ptr<FaceDetectorBase> faceDetector = std::make_unique<FaceDetectorDNN>(useOCL);
     SkinDetector skinDetector;
     if (!SkinInit(skinDetector))
     {
@@ -219,7 +220,7 @@ int main(int argc, char* argv[])
         case FaceDetection:
         {
             // Детект лица
-            cv::Rect face = faceDetector.DetectBiggestFace(rgbframe.getUMat(cv::ACCESS_READ), useSkinDetection);
+            cv::Rect face = faceDetector->DetectBiggestFace(rgbframe.getUMat(cv::ACCESS_READ), useSkinDetection);
             // Tracking
             if (face.area() > 0)
             {
