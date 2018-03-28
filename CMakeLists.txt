@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.8)
 
 project (HeartRateMeasure)
 
-FIND_PACKAGE(OpenCV 3.0 REQUIRED)
+FIND_PACKAGE(OpenCV 3.4 REQUIRED)
 
 FIND_PACKAGE(Eigen3)
 

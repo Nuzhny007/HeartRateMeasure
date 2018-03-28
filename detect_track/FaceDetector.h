@@ -21,7 +21,7 @@ public:
 
     }
 
-    virtual cv::Rect DetectBiggestFace(cv::UMat image, bool originalFace) = 0;
+    virtual cv::Rect DetectBiggestFace(cv::UMat image) = 0;
 };
 
 ///
@@ -33,7 +33,7 @@ public:
     FaceDetectorHaar(bool useOCL);
     ~FaceDetectorHaar();
 
-    cv::Rect DetectBiggestFace(cv::UMat image, bool originalFace);
+    cv::Rect DetectBiggestFace(cv::UMat image);
 
 private:
     double m_kw;
@@ -51,7 +51,7 @@ public:
     FaceDetectorDNN(bool useOCL);
     ~FaceDetectorDNN();
 
-    cv::Rect DetectBiggestFace(cv::UMat image, bool originalFace);
+    cv::Rect DetectBiggestFace(cv::UMat image);
 
 private:
     cv::String m_modelConfiguration;

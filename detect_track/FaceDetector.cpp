@@ -35,10 +35,9 @@ FaceDetectorHaar::~FaceDetectorHaar()
 ///
 /// \brief FaceDetectorHaar::DetectBiggestFace
 /// \param image
-/// \param originalFace
 /// \return
 ///
-cv::Rect FaceDetectorHaar::DetectBiggestFace(cv::UMat image, bool originalFace)
+cv::Rect FaceDetectorHaar::DetectBiggestFace(cv::UMat image)
 {
     cv::Rect res(0, 0, 0, 0);
 
@@ -71,19 +70,6 @@ cv::Rect FaceDetectorHaar::DetectBiggestFace(cv::UMat image, bool originalFace)
     if (!faceRects.empty())
     {
         res = faceRects[0];
-    }
-
-    if (!originalFace)
-    {
-        const double dw = res.width * m_kw;
-        const double dh = res.height * m_kh;
-        const double dx = dw / 2.0;
-        const double dy = dh / 2.0;
-
-        res.x += static_cast<int>(dx);
-        res.y += static_cast<int>(dy);
-        res.width -= static_cast<int>(dw);
-        res.height -= static_cast<int>(dh);
     }
 
     return res;
@@ -126,10 +112,9 @@ FaceDetectorDNN::~FaceDetectorDNN()
 ///
 /// \brief FaceDetectorDNN::DetectBiggestFace
 /// \param image
-/// \param originalFace
 /// \return
 ///
-cv::Rect FaceDetectorDNN::DetectBiggestFace(cv::UMat image, bool originalFace)
+cv::Rect FaceDetectorDNN::DetectBiggestFace(cv::UMat image)
 {
     cv::Rect res(0, 0, 0, 0);
 

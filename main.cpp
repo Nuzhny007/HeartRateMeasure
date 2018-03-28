@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
         case FaceDetection:
         {
             // Детект лица
-            cv::Rect face = faceDetector->DetectBiggestFace(rgbframe.getUMat(cv::ACCESS_READ), useSkinDetection);
+            cv::Rect face = faceDetector->DetectBiggestFace(rgbframe.getUMat(cv::ACCESS_READ));
             // Tracking
             if (face.area() > 0)
             {
