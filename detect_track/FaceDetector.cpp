@@ -129,13 +129,22 @@ cv::Rect FaceDetectorDNN::DetectBiggestFace(cv::UMat image)
 
     cv::Mat detection = m_net.forward("detection_out");
 
+#if 0
+    for (int i = 0; i < 4; ++i)
+    {
+        std::cout << "detection.size[" << i << "] = " << detection.size[i] << "; ";
+    }
+    std::cout << std::endl;
+#endif
+
     cv::Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
 
     for (int i = 0; i < detectionMat.rows; i++)
     {
         float confidence = detectionMat.at<float>(i, 2);
+        int objectClass = cvRound(detectionMat.at<float>(i, 2));
 
-        if (confidence > m_confidenceThreshold)
+        if (confidence > m_confidenceThreshold && objectClass == 1)
         {
             int xLeftBottom = cvRound(detectionMat.at<float>(i, 3) * image.cols);
             int yLeftBottom = cvRound(detectionMat.at<float>(i, 4) * image.rows);
@@ -144,11 +153,20 @@ cv::Rect FaceDetectorDNN::DetectBiggestFace(cv::UMat image)
 
             cv::Rect object(xLeftBottom, yLeftBottom, xRightTop - xLeftBottom, yRightTop - yLeftBottom);
 
-            if (object.width > res.width)
+            if (object.x >=0 && object.y >= 0 &&
+                    object.x + object.width < image.rows &&
+                    object.y + object.height < image.cols)
             {
-                res = object;
+                if (object.width > res.width)
+                {
+                    res = object;
+                }
             }
         }
+
+        //std::cout << "Face " << i << ": confidence = " << confidence << ", class = " << cvRound(detectionMat.at<float>(i, 2));
+        //std::cout << ", rect(" << detectionMat.at<float>(i, 3) << ", " << detectionMat.at<float>(i, 4) << ", ";
+        //std::cout << detectionMat.at<float>(i, 5) << ", " << detectionMat.at<float>(i, 6) << ")" << std::endl;
     }
 
     return res;
