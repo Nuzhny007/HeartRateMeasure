@@ -47,13 +47,22 @@ LKTracker::LKTracker(cv::Rect initRegion)
 ///
 /// \brief LKTracker::ReinitTracker
 /// \param initRegion
+/// \param points
 ///
-void LKTracker::ReinitTracker(cv::Rect initRegion)
+void LKTracker::ReinitTracker(cv::Rect initRegion, const std::vector<cv::Point2f>& points)
 {
     bb1 = initRegion;
     bb2 = initRegion;
-    BbPoints(points1, bb1);
-    BbPoints(points2, bb2);
+    if (points.empty())
+    {
+        BbPoints(points1, bb1);
+        BbPoints(points2, bb2);
+    }
+    else
+    {
+        points1.assign(std::begin(points), std::end(points));
+        points2.assign(std::begin(points), std::end(points));
+    }
     lost = false;
 }
 

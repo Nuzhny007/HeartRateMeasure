@@ -171,3 +171,48 @@ cv::Rect FaceDetectorDNN::DetectBiggestFace(cv::UMat image)
 
     return res;
 }
+
+///
+/// \brief FaceLandmarksDetector::FaceLandmarksDetector
+///
+FaceLandmarksDetector::FaceLandmarksDetector()
+{
+#if (defined WIN32 || defined _WIN32 || defined WINCE || defined __CYGWIN__)
+    m_modelFilename = "face_landmark_model.dat";
+#else
+    m_modelFilename = "../HeartRateMeasure/data/face_detector/face_landmark_model.dat";
+#endif
+
+    cv::face::FacemarkKazemi::Params params;
+    m_facemark = cv::face::FacemarkKazemi::create(params);
+    m_facemark->loadModel(m_modelFilename);
+}
+
+///
+/// \brief FaceLandmarksDetector::~FaceLandmarksDetector
+///
+FaceLandmarksDetector::~FaceLandmarksDetector()
+{
+
+}
+
+///
+/// \brief FaceLandmarksDetector::Detect
+/// \param image
+/// \param faceRect
+/// \param landmarks
+///
+void FaceLandmarksDetector::Detect(cv::UMat image,
+                                   const cv::Rect& faceRect,
+                                   std::vector<cv::Point2f>& landmarks)
+{
+    std::vector<cv::Rect> faces = { faceRect };
+    std::vector<std::vector<cv::Point2f>> shapes;
+
+    landmarks.clear();
+
+    if (m_facemark->fit(image, faces, shapes))
+    {
+        landmarks.assign(std::begin(shapes[0]), std::end(shapes[0]));
+    }
+}

@@ -22,7 +22,7 @@ public:
     }
 
     void Track(cv::Mat img);
-    void ReinitTracker(cv::Rect initRegion);
+    void ReinitTracker(cv::Rect initRegion, const std::vector<cv::Point2f>& points);
 
  private:
     bool tvalid;

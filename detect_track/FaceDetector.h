@@ -3,7 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/dnn.hpp>
 #include <opencv2/dnn/shape_utils.hpp>
-
+#include <opencv2/face.hpp>
 
 ///
 /// \brief The FaceDetectorBase class
@@ -59,4 +59,20 @@ private:
     cv::dnn::Net m_net;
 
     float m_confidenceThreshold;
+};
+
+///
+/// \brief The FaceLandmarksDetector class
+///
+class FaceLandmarksDetector
+{
+public:
+    FaceLandmarksDetector();
+    ~FaceLandmarksDetector();
+
+    void Detect(cv::UMat image, const cv::Rect& faceRect, std::vector<cv::Point2f>& landmarks);
+
+private:
+    std::string m_modelFilename;
+    cv::Ptr<cv::face::FacemarkKazemi> m_facemark;
 };

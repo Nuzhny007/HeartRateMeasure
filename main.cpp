@@ -160,11 +160,13 @@ int main(int argc, char* argv[])
         std::cout << "Without result file" << std::endl;
     }
 
-	// Прямоугольник с лицом 
+    // Прямоугольник с лицом и точки на нём
     cv::Rect currentRect;
+    std::vector<cv::Point2f> landmarks;
 
     // Face detector and tracker
     std::unique_ptr<FaceDetectorBase> faceDetector = std::make_unique<FaceDetectorDNN>(useOCL);
+    FaceLandmarksDetector landmarksDetector;
     SkinDetector skinDetector;
     if (!SkinInit(skinDetector))
     {
@@ -219,15 +221,21 @@ int main(int argc, char* argv[])
 
         case FaceDetection:
         {
+            cv::UMat uframe = rgbframe.getUMat(cv::ACCESS_READ);
+
             // Детект лица
-            cv::Rect face = faceDetector->DetectBiggestFace(rgbframe.getUMat(cv::ACCESS_READ));
+            cv::Rect face = faceDetector->DetectBiggestFace(uframe);
             // Tracking
             if (face.area() > 0)
             {
-                faceTracker.ReinitTracker(face);
-                currentRect = faceTracker.GetTrackedRegion();
+                landmarksDetector.Detect(uframe, face, landmarks);
+                if (!landmarks.empty())
+                {
+                    faceTracker.ReinitTracker(face, landmarks);
+                    currentRect = faceTracker.GetTrackedRegion();
+                }
             }
-            else
+            if (face.area() == 0)
             {
                 faceTracker.Track(rgbframe);
                 if (!faceTracker.IsLost())
@@ -281,6 +289,11 @@ int main(int argc, char* argv[])
         double currFreq = sp.GetInstantaneousFreq(&minFreq, &maxFreq);
         sprintf(str, "[%2.2f, %2.2f] = %2.2f - %2.2f", minFreq, maxFreq, currFreq, sp.GetFreq());
         cv::putText(frame, str, cv::Point(frame.cols - I.cols, 50), CV_FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar::all(255));
+
+        for (auto pt : landmarks)
+        {
+            cv::circle(frame, cv::Point(cvRound(pt.x), cvRound(pt.y)), 2, cv::Scalar(0, 150, 0), 1, cv::LINE_8);
+        }
 
         if (useMA)
         {
