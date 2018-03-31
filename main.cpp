@@ -177,7 +177,7 @@ int main(int argc, char* argv[])
     EulerianMA eulerianMA;
 
 	// Создаем анализатор
-    SignalProcessor sp(sampleSize, filterType);
+    SignalProcessor signalProcessor(sampleSize, filterType);
 
     double tick_freq = cv::getTickFrequency();
 
@@ -274,12 +274,12 @@ int main(int argc, char* argv[])
 
             TimerTimestamp captureTime = useFPS ? ((frameInd * 1000.) / fps) : t1;
             std::cout << frameInd << ": capture time = " << captureTime << std::endl;
-            sp.AddMeasure(captureTime, cv::Vec3d(meanVal.val));
-            sp.MeasureFrequency(I, Freq, frameInd);
+            signalProcessor.AddMeasure(captureTime, cv::Vec3d(meanVal.val));
+            signalProcessor.MeasureFrequency(I, Freq, frameInd);
 		}
         else
         {
-            sp.Reset();
+            signalProcessor.Reset();
         }
 
         frame(cv::Rect(frame.cols - I.cols, 0, I.cols, I.rows)) *= 0.5;
@@ -290,8 +290,8 @@ int main(int argc, char* argv[])
 		char str[1024];
         double minFreq = 0;
         double maxFreq = 0;
-        double currFreq = sp.GetInstantaneousFreq(&minFreq, &maxFreq);
-        sprintf(str, "[%2.2f, %2.2f] = %2.2f - %2.2f", minFreq, maxFreq, currFreq, sp.GetFreq());
+        double currFreq = signalProcessor.GetInstantaneousFreq(&minFreq, &maxFreq);
+        sprintf(str, "[%2.2f, %2.2f] = %2.2f - %2.2f", minFreq, maxFreq, currFreq, signalProcessor.GetFreq());
         cv::putText(frame, str, cv::Point(frame.cols - I.cols, 50), CV_FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar::all(255));
 
         for (auto pt : landmarks)
@@ -350,7 +350,7 @@ int main(int argc, char* argv[])
 
         case 'r':
         case 'R':
-            sp.Reset();
+            signalProcessor.Reset();
             std::cout << "Reset SignalProcessor" << std::endl;
             break;
 
