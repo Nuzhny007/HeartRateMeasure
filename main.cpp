@@ -195,7 +195,7 @@ int main(int argc, char* argv[])
         {
             if (frameInd == 0)
             {
-                eulerianMA.Init(rgbframe, 10, 16, 0.4, 3.0, 30, 1.0);
+                eulerianMA.Init(rgbframe, 10, 16, 0.4, 3.0, cvRound(fps), 1.0);
             }
             else
             {
