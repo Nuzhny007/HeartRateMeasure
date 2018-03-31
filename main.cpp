@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
     std::vector<cv::Point2f> landmarks;
 
     // Face detector and tracker
-    std::unique_ptr<FaceDetectorBase> faceDetector = std::make_unique<FaceDetectorDNN>(useOCL);
+    std::unique_ptr<FaceDetectorBase> faceDetector = std::make_unique<FaceDetectorHaar>(useOCL);
     FaceLandmarksDetector landmarksDetector;
     SkinDetector skinDetector;
     if (!SkinInit(skinDetector))
@@ -247,6 +247,10 @@ int main(int argc, char* argv[])
                     currentRect = cv::Rect();
                 }
             }
+            if (currentRect.empty())
+            {
+                std::cout << "No face!" << std::endl;
+            }
         }
             break;
 
@@ -319,7 +323,7 @@ int main(int argc, char* argv[])
         TimerTimestamp t2 = cv::getTickCount();
 
         double t = (t2 - t1) / tick_freq;
-        std::cout << "t = " << t << std::endl;
+        std::cout << frameInd << ": t = " << t << std::endl;
         int waitTime = manual ? 0 : (std::max<int>(1, 1000 / fps - t / 1000));
         int k = cv::waitKey(waitTime);
 
