@@ -162,7 +162,8 @@ int main(int argc, char* argv[])
 
     // Прямоугольник с лицом и точки на нём
     cv::Rect currentRect;
-    std::vector<cv::Point2f> landmarks;
+    std::vector<cv::Point2f> currLandmarks;
+    std::vector<cv::Point2f> prevLandmarks;
 
     // Face detector and tracker
     std::unique_ptr<FaceDetectorBase> faceDetector = std::make_unique<FaceDetectorHaar>(useOCL);
@@ -228,12 +229,25 @@ int main(int argc, char* argv[])
             // Tracking
             if (face.area() > 0)
             {
-                landmarksDetector.Detect(uframe, face, landmarks);
-                if (!landmarks.empty())
+                landmarksDetector.Detect(uframe, face, currLandmarks);
+                if (!currLandmarks.empty())
                 {
-                    faceTracker.ReinitTracker(face, landmarks);
+                    faceTracker.ReinitTracker(face, currLandmarks);
                     currentRect = faceTracker.GetTrackedRegion();
+
+                    if (prevLandmarks.size() == currLandmarks.size())
+                    {
+                        cv::Point2f sum(0, 0);
+                        for (size_t i = 0; i < currLandmarks.size(); ++i)
+                        {
+                            sum.x += currLandmarks[i].x - prevLandmarks[i].x;
+                            sum.y += currLandmarks[i].y - prevLandmarks[i].y;
+                        }
+                        float val = sqrt(sqr(sum.x) + sqr(sum.y));
+                    }
                 }
+
+                prevLandmarks.assign(std::begin(currLandmarks), std::end(currLandmarks));
             }
             if (face.area() == 0)
             {
@@ -294,7 +308,7 @@ int main(int argc, char* argv[])
         sprintf(str, "[%2.2f, %2.2f] = %2.2f - %2.2f", minFreq, maxFreq, currFreq, signalProcessor.GetFreq());
         cv::putText(frame, str, cv::Point(frame.cols - I.cols, 50), CV_FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar::all(255));
 
-        for (auto pt : landmarks)
+        for (auto pt : currLandmarks)
         {
             cv::circle(frame, cv::Point(cvRound(pt.x), cvRound(pt.y)), 2, cv::Scalar(0, 150, 0), 1, cv::LINE_8);
         }
