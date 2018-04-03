@@ -288,10 +288,29 @@ int main(int argc, char* argv[])
             {
                 std::cout << "No face!" << std::endl;
             }
-            if (!moveSPUpdated)
+            else
             {
-                signalProcessorMoving.Reset();
-                std::cout << "signalProcessorMoving.Reset!!!!!!!!!!!" << std::endl;
+                if (currentRect.x < 0)
+                {
+                    currentRect.x = 0;
+                }
+                if (currentRect.x + currentRect.width > rgbframe.cols - 1)
+                {
+                    currentRect.width = rgbframe.cols - 1 - currentRect.x;
+                }
+                if (currentRect.y < 0)
+                {
+                    currentRect.y = 0;
+                }
+                if (currentRect.y + currentRect.height > rgbframe.rows - 1)
+                {
+                    currentRect.height = rgbframe.rows - 1 - currentRect.y;
+                }
+                if (!moveSPUpdated)
+                {
+                    signalProcessorMoving.Reset();
+                    std::cout << "signalProcessorMoving.Reset!!!!!!!!!!!" << std::endl;
+                }
             }
         }
             break;
