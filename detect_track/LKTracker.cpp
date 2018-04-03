@@ -139,7 +139,7 @@ void LKTracker::NormCrossCorrelation(
 
             cv::Mat res;
             cv::matchTemplate(rec0,rec1, res, cv::TM_CCOEFF_NORMED);
-            similarity[i] = ((float *)(res.data))[0];
+            similarity[i] = ((float*)(res.data))[0];
         }
         else
         {
@@ -176,7 +176,7 @@ bool LKTracker::FilterPts(
             k++;
         }
     }
-    if (k==0)
+    if (k == 0)
     {
         return false;
     }
@@ -189,7 +189,7 @@ bool LKTracker::FilterPts(
     k = 0;
     for (size_t i = 0; i < points2.size(); ++i)
     {
-        if(FB_error[i] <= fbmed)
+        if (FB_error[i] <= fbmed)
         {
             points1[k] = points1[i];
             points2[k] = points2[i];
@@ -198,7 +198,7 @@ bool LKTracker::FilterPts(
     }
     points1.resize(k);
     points2.resize(k);
-    if (k > 30)
+    if (k > MinPoints)
     {
         return true;
     }
@@ -224,7 +224,7 @@ void LKTracker::Track(
         return;
     }
 
-    if (points1.size() < 70)
+    if (points1.size() < PointsToGenerate)
     {
         points1.clear();
         // Generate point set
@@ -245,11 +245,11 @@ void LKTracker::Track(
     {
         //Bounding box prediction
         BbPredict(points1, points2);
-        if (getFB() > 10 || bb2.x > img.cols || bb2.y > img.rows || bb2.br().x < 1 || bb2.br().y < 1)
+        if (fbmed > 10 || bb2.x > img.cols || bb2.y > img.rows || bb2.br().x < 1 || bb2.br().y < 1)
         {
             tvalid = false; //too unstable prediction or bounding box out of image
             tracked = false;
-            printf("Too unstable predictions FB error=%f\n",getFB());
+            printf("Too unstable predictions FB error=%f\n", fbmed);
             return;
         }
 
@@ -261,10 +261,7 @@ void LKTracker::Track(
     }
     bb1 = bb2;
 
-    if(tracked == false)
-    {
-        lost = true;
-    }
+    lost = (tracked == false);
 }
 
 ///
@@ -281,8 +278,8 @@ void LKTracker::BbPoints(
     int max_pts = 20; // Number of points on each dimention
     int margin_h = 0; // horizontal margin
     int margin_v = 0; // vertial margin
-    int stepx = ceilf((float)(bb.width-2.0*margin_h)/(float)max_pts);
-    int stepy = ceilf((float)(bb.height-2.0*margin_v)/(float)max_pts);
+    int stepx = ceilf((float)(bb.width - 2.0 * margin_h) / (float)max_pts);
+    int stepy = ceilf((float)(bb.height - 2.0 * margin_v) / (float)max_pts);
 
     points.clear();
     points.reserve(max_pts * max_pts);
@@ -312,24 +309,24 @@ void LKTracker::BbPredict(
     std::vector<float> yoff(npoints);
     std::cout << npoints << " points tracked." << std::endl;
 
-    for (int i=0; i<npoints; i++)
+    for (int i = 0; i < npoints; i++)
     {
-        xoff[i]=points2[i].x-points1[i].x;
-        yoff[i]=points2[i].y-points1[i].y;
+        xoff[i] = points2[i].x - points1[i].x;
+        yoff[i] = points2[i].y - points1[i].y;
     }
     float dx = median(xoff);
     float dy = median(yoff);
-    float s;
+    float s = 1.0;
     if (npoints > 1)
     {
-        std::vector<float> d(npoints*(npoints-1)/2);
-        int ind=0;
+        std::vector<float> d(npoints * (npoints - 1) / 2);
+        int ind = 0;
 
-        for (int i=0; i<npoints; i++)
+        for (int i = 0; i<npoints; i++)
         {
-            for (int j=i+1; j<npoints; j++)
+            for (int j = i + 1; j < npoints; j++)
             {
-                d[ind] = norm(points2[i]-points2[j]) / norm(points1[i]-points1[j]);
+                d[ind] = norm(points2[i] - points2[j]) / norm(points1[i] - points1[j]);
                 ++ind;
             }
         }
@@ -337,16 +334,52 @@ void LKTracker::BbPredict(
         s = median(d);
         d.clear();
     }
-    else
-    {
-        s = 1.0;
-    }
-    float s1 = 0.5*(s-1)*(float)bb1.width;
-    float s2 = 0.5*(s-1)*(float)bb1.height;
+
+    float s1 = 0.5 * (s - 1) * (float)bb1.width;
+    float s2 = 0.5 * (s - 1) * (float)bb1.height;
     ////printf("s= %f s1= %f s2= %f \n",s,s1,s2);
-    bb2.x = cvRound( (float)bb1.x + dx - s1);
-    bb2.y = cvRound( (float)bb1.y + dy - s2);
-    bb2.width = cvRound((float)bb1.width*s);
-    bb2.height = cvRound((float)bb1.height*s);
+    bb2.x = cvRound((float)bb1.x + dx - s1);
+    bb2.y = cvRound((float)bb1.y + dy - s2);
+    bb2.width = cvRound((float)bb1.width * s);
+    bb2.height = cvRound((float)bb1.height * s);
     std::cout << "Predicted box: " << bb2 << std::endl;
+}
+
+///
+/// \brief LKTracker::IsLost
+/// \return
+///
+bool LKTracker::IsLost(void) const
+{
+    return lost;
+}
+
+///
+/// \brief LKTracker::GetTrackedRegion
+/// \return
+///
+cv::Rect LKTracker::GetTrackedRegion(void) const
+{
+    return bb2;
+}
+
+///
+/// \brief LKTracker::GetMovingSum
+/// \return
+///
+bool LKTracker::GetMovingSum(cv::Point2d& moveSum) const
+{
+    moveSum = cv::Point2d(0, 0);
+
+    if (points1.size() == points2.size() && points1.size() > PointsToGenerate)
+    {
+        for (size_t i = 0; i < points1.size(); ++i)
+        {
+            moveSum.x += points1[i].x - points2[i].x;
+            moveSum.y += points1[i].y - points2[i].y;
+        }
+
+        return true;
+    }
+    return false;
 }

@@ -4,6 +4,27 @@
 #include <deque>
 #include <opencv2/opencv.hpp>
 
+typedef int64 TimerTimestamp;
+
+///
+/// \brief The Measure class
+/// Измерение.
+/// Включает в себя момент времени в который произведено измерение и собствнно само измерение.
+///
+template <typename VAL>
+class Measure
+{
+public:
+    TimerTimestamp t; // Время измерения
+    VAL val;		  // Значение измеренной величины
+
+    Measure (TimerTimestamp t_, const VAL& val_)
+    {
+        t = t_;
+        val = val_;
+    }
+};
+
 ///
 /// \brief sqr
 /// \param v
@@ -369,7 +390,7 @@ public:
     ///
     /// \brief Visualize
     ///
-    void Visualize(bool saveResult, int frameInd)
+    void Visualize(bool saveResult, int frameInd, const std::string& wndName)
     {
         const int oneHeight = 100;
         const DATA_T maxVal = 200;
@@ -425,11 +446,11 @@ public:
             }
         }
 
-        cv::imshow("mixture", img);
+        cv::imshow("mixture " + wndName, img);
 
         if (saveResult)
         {
-            std::string fileName = "mixture/" + std::to_string(frameInd) + ".png";
+            std::string fileName = "mixture_" + wndName + "/" + std::to_string(frameInd) + ".png";
             cv::imwrite(fileName, img);
         }
     }

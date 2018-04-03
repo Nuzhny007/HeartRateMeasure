@@ -3,7 +3,8 @@
 #include <string>
 #include <memory>
 
-#include "SignalProcessor.h"
+#include "SignalProcessorColor.h"
+#include "SignalProcessorMoving.h"
 
 #include "detect_track/FaceDetector.h"
 #include "detect_track/SkinDetector.h"
@@ -97,7 +98,7 @@ int main(int argc, char* argv[])
     bool useSkinDetection = parser.get<int>("skin") != 0;;
     RectSelection selectionType = FaceDetection;
 
-    SignalProcessor::RGBFilters filterType = (parser.get<std::string>("filter") == "ica") ? SignalProcessor::FilterICA : SignalProcessor::FilterPCA;
+    SignalProcessorColor::RGBFilters filterType = (parser.get<std::string>("filter") == "ica") ? SignalProcessorColor::FilterICA : SignalProcessorColor::FilterPCA;
 
     cv::VideoCapture capture;
     if (fileName.size() > 1)
@@ -139,7 +140,8 @@ int main(int argc, char* argv[])
 	// Изображение для вывода графика
     int frameWidth = capture.get(cv::CAP_PROP_FRAME_WIDTH);
     int frameHeight = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
-    cv::Mat I(std::min(100, frameHeight), std::min(640, frameWidth), CV_8UC3, cv::Scalar::all(0));
+    cv::Mat imgColor(std::min(100, frameHeight), std::min(640, frameWidth), CV_8UC3, cv::Scalar::all(0));
+    cv::Mat imgMoving(std::min(100, frameHeight), std::min(640, frameWidth), CV_8UC3, cv::Scalar::all(0));
 
     cv::VideoWriter videoWiter;
     if (parser.get<int>("out") > 0)
@@ -178,7 +180,8 @@ int main(int argc, char* argv[])
     EulerianMA eulerianMA;
 
 	// Создаем анализатор
-    SignalProcessor signalProcessor(sampleSize, filterType);
+    SignalProcessorColor signalProcessorColor(sampleSize, filterType);
+    SignalProcessorMoving signalProcessorMoving(sampleSize);
 
     double tick_freq = cv::getTickFrequency();
 
@@ -214,6 +217,9 @@ int main(int argc, char* argv[])
             continue;
         }
 
+        TimerTimestamp captureTime = useFPS ? ((frameInd * 1000.) / fps) : t1;
+        std::cout << frameInd << ": capture time = " << captureTime << std::endl;
+
         switch (selectionType)
         {
         case NoneSelection:
@@ -223,6 +229,8 @@ int main(int argc, char* argv[])
         case FaceDetection:
         {
             cv::UMat uframe = rgbframe.getUMat(cv::ACCESS_READ);
+
+            bool moveSPUpdated = false;
 
             // Детект лица
             cv::Rect face = faceDetector->DetectBiggestFace(uframe);
@@ -237,13 +245,18 @@ int main(int argc, char* argv[])
 
                     if (prevLandmarks.size() == currLandmarks.size())
                     {
-                        cv::Point2f sum(0, 0);
+                        cv::Point2d sum(0, 0);
                         for (size_t i = 0; i < currLandmarks.size(); ++i)
                         {
                             sum.x += currLandmarks[i].x - prevLandmarks[i].x;
                             sum.y += currLandmarks[i].y - prevLandmarks[i].y;
                         }
-                        float val = sqrt(sqr(sum.x) + sqr(sum.y));
+                        double val = sqrt(sqr(sum.x) + sqr(sum.y));
+
+                        signalProcessorMoving.AddMeasure(captureTime, val);
+                        signalProcessorMoving.MeasureFrequency(imgMoving, Freq, frameInd);
+                        moveSPUpdated = true;
+                        //std::cout << "signalProcessorMoving update by value" << std::endl;
                     }
                 }
 
@@ -255,6 +268,16 @@ int main(int argc, char* argv[])
                 if (!faceTracker.IsLost())
                 {
                     currentRect = faceTracker.GetTrackedRegion();
+
+                    cv::Point2d sum;
+                    if (faceTracker.GetMovingSum(sum))
+                    {
+                        double val = sqrt(sqr(sum.x) + sqr(sum.y));
+                        signalProcessorMoving.AddMeasure(captureTime, val);
+                        signalProcessorMoving.MeasureFrequency(imgMoving, Freq, frameInd);
+                        moveSPUpdated = true;
+                        std::cout << "signalProcessorMoving update by tracking" << std::endl;
+                    }
                 }
                 else
                 {
@@ -264,6 +287,11 @@ int main(int argc, char* argv[])
             if (currentRect.empty())
             {
                 std::cout << "No face!" << std::endl;
+            }
+            if (!moveSPUpdated)
+            {
+                signalProcessorMoving.Reset();
+                std::cout << "signalProcessorMoving.Reset!!!!!!!!!!!" << std::endl;
             }
         }
             break;
@@ -286,28 +314,37 @@ int main(int argc, char* argv[])
             }
             cv::Scalar meanVal = cv::mean(frame(currentRect), skinMask.empty() ? cv::noArray() : skinMask);
 
-            TimerTimestamp captureTime = useFPS ? ((frameInd * 1000.) / fps) : t1;
-            std::cout << frameInd << ": capture time = " << captureTime << std::endl;
-            signalProcessor.AddMeasure(captureTime, cv::Vec3d(meanVal.val));
-            signalProcessor.MeasureFrequency(I, Freq, frameInd);
+            signalProcessorColor.AddMeasure(captureTime, cv::Vec3d(meanVal.val));
+            signalProcessorColor.MeasureFrequency(imgColor, Freq, frameInd);
 		}
         else
         {
-            signalProcessor.Reset();
+            signalProcessorColor.Reset();
         }
 
-        frame(cv::Rect(frame.cols - I.cols, 0, I.cols, I.rows)) *= 0.5;
-        frame(cv::Rect(frame.cols - I.cols, 0, I.cols, I.rows)) += 0.5 * I;
-
-        cv::rectangle(frame, currentRect, cv::Scalar(0, 255, 0), 1);
+        // Draw color processing result
+        frame(cv::Rect(frame.cols - imgColor.cols, 0, imgColor.cols, imgColor.rows)) *= 0.5;
+        frame(cv::Rect(frame.cols - imgColor.cols, 0, imgColor.cols, imgColor.rows)) += 0.5 * imgColor;
 
 		char str[1024];
         double minFreq = 0;
         double maxFreq = 0;
-        double currFreq = signalProcessor.GetInstantaneousFreq(&minFreq, &maxFreq);
-        sprintf(str, "[%2.2f, %2.2f] = %2.2f - %2.2f", minFreq, maxFreq, currFreq, signalProcessor.GetFreq());
-        cv::putText(frame, str, cv::Point(frame.cols - I.cols, 50), CV_FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar::all(255));
+        double currFreq = signalProcessorColor.GetInstantaneousFreq(&minFreq, &maxFreq);
+        sprintf(str, "[%2.2f, %2.2f] = %2.2f - %2.2f", minFreq, maxFreq, currFreq, signalProcessorColor.GetFreq());
+        cv::putText(frame, str, cv::Point(frame.cols - imgColor.cols, 50), CV_FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar::all(255));
 
+        // Draw moving processing result
+        frame(cv::Rect(frame.cols - imgColor.cols - imgMoving.cols, 0, imgMoving.cols, imgMoving.rows)) *= 0.5;
+        frame(cv::Rect(frame.cols - imgColor.cols - imgMoving.cols, 0, imgMoving.cols, imgMoving.rows)) += 0.5 * imgMoving;
+
+        minFreq = 0;
+        maxFreq = 0;
+        currFreq = signalProcessorMoving.GetInstantaneousFreq(&minFreq, &maxFreq);
+        sprintf(str, "[%2.2f, %2.2f] = %2.2f - %2.2f", minFreq, maxFreq, currFreq, signalProcessorMoving.GetFreq());
+        cv::putText(frame, str, cv::Point(frame.cols - imgColor.cols - imgMoving.cols, 50), CV_FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar::all(255));
+
+        // Draw detection data
+        cv::rectangle(frame, currentRect, cv::Scalar(0, 255, 0), 1);
         for (auto pt : currLandmarks)
         {
             cv::circle(frame, cv::Point(cvRound(pt.x), cvRound(pt.y)), 2, cv::Scalar(0, 150, 0), 1, cv::LINE_8);
@@ -364,7 +401,7 @@ int main(int argc, char* argv[])
 
         case 'r':
         case 'R':
-            signalProcessor.Reset();
+            signalProcessorColor.Reset();
             std::cout << "Reset SignalProcessor" << std::endl;
             break;
 

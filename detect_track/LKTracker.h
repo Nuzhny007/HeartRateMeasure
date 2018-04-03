@@ -11,15 +11,9 @@ public:
     LKTracker();
     LKTracker(cv::Rect initRegion);
 
-    bool IsLost(void)
-    {
-        return lost;
-    }
-
-    cv::Rect GetTrackedRegion(void)
-    {
-        return bb2;
-    }
+    bool IsLost(void) const;
+    cv::Rect GetTrackedRegion(void) const;
+    bool GetMovingSum(cv::Point2d& moveSum) const;
 
     void Track(cv::Mat img);
     void ReinitTracker(cv::Rect initRegion, const std::vector<cv::Point2f>& points);
@@ -56,8 +50,6 @@ public:
 
     cv::Mat imgPrev;
 
-    float getFB()
-    {
-        return fbmed;
-    }
+    static const size_t MinPoints = 20;
+    static const size_t PointsToGenerate = 30;
 };

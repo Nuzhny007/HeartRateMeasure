@@ -34,7 +34,8 @@ endif()
 # ----------------------------------------------------------------------
 set(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/SignalProcessor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/SignalProcessorColor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/SignalProcessorMoving.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/FastICA.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/pca.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/detect_track/FaceDetector.cpp
@@ -46,7 +47,8 @@ set(SOURCE
 
 set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/stat.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/SignalProcessor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SignalProcessorColor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SignalProcessorMoving.h
     ${CMAKE_CURRENT_SOURCE_DIR}/FastICA.h
     ${CMAKE_CURRENT_SOURCE_DIR}/pca.h
     ${CMAKE_CURRENT_SOURCE_DIR}/detect_track/FaceDetector.h

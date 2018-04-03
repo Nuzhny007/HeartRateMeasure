@@ -1,37 +1,15 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
-
 #include "stat.h"
 
-typedef int64 TimerTimestamp;
-
 ///
-/// \brief The Measure class
-/// Измерение.
-/// Включает в себя момент времени в который произведено измерение и собствнно само измерение.
-///
-class Measure
-{
-public:
-    TimerTimestamp t; // Время измерения
-    cv::Vec3d val;		  // Значение измеренной величины
-
-    Measure (TimerTimestamp t_, cv::Vec3d val_)
-    {
-        t = t_;
-        val = val_;
-    }
-};
-
-///
-/// \brief The SignalProcessor class
+/// \brief The SignalProcessorColor class
 /// Обработчик сигналов.
 /// Включает в себя очередь (с итератором) с данными.
 /// Функцию для размещения сигналов с метками на равномерной временной сетке.
 /// Функцию для разделения сигналов.
 ///
-class SignalProcessor
+class SignalProcessorColor
 {
 public:
     enum RGBFilters
@@ -40,11 +18,13 @@ public:
         FilterPCA
     };
 
+    typedef cv::Vec3d ClVal_t;
+
     ///
     /// \brief SignalProcessor
     /// \param framesCount
     ///
-    SignalProcessor(size_t framesCount, RGBFilters filterType);
+    SignalProcessorColor(size_t framesCount, RGBFilters filterType);
 
     ///
     /// \brief Reset
@@ -56,7 +36,7 @@ public:
     /// \param captureTime
     /// \param val
     ///
-    void AddMeasure(TimerTimestamp captureTime, cv::Vec3d val);
+    void AddMeasure(TimerTimestamp captureTime, const ClVal_t& val);
 
     ///
     /// \brief GetFreq
@@ -111,7 +91,7 @@ private:
     ///
     /// \brief m_queue
     ///
-    std::deque<Measure> m_queue;
+    std::deque<Measure<ClVal_t>> m_queue;
 
     ///
     /// \brief Преобразуем очередь измерений с метками времени в измерения на равномерной временной сетке
@@ -127,7 +107,7 @@ private:
     /// \param _t
     /// \return
     ///
-    cv::Vec3d FindValueForTime(TimerTimestamp _t);
+    ClVal_t FindValueForTime(TimerTimestamp _t);
 
     ///
     /// \brief Выделяем первый сигнал (первый собственный вектор)

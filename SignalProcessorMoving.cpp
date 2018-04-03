@@ -1,15 +1,12 @@
-#include "SignalProcessor.h"
-#include "FastICA.h"
-#include "pca.h"
+#include "SignalProcessorMoving.h"
 
 ///
-/// \brief SignalProcessor::SignalProcessor
+/// \brief SignalProcessorMoving::SignalProcessorMoving
 /// \param framesCount
 ///
-SignalProcessor::SignalProcessor(size_t framesCount, RGBFilters filterType)
+SignalProcessorMoving::SignalProcessorMoving(size_t framesCount)
     :
       m_size(framesCount),
-      m_filterType(filterType),
       m_minFreq(0),
       m_maxFreq(0),
       m_currFreq(0)
@@ -17,9 +14,9 @@ SignalProcessor::SignalProcessor(size_t framesCount, RGBFilters filterType)
 }
 
 ///
-/// \brief SignalProcessor::Reset
+/// \brief SignalProcessorMoving::Reset
 ///
-void SignalProcessor::Reset()
+void SignalProcessorMoving::Reset()
 {
     m_queue.clear();
     m_FF = freq_t();
@@ -29,13 +26,13 @@ void SignalProcessor::Reset()
 }
 
 ///
-/// \brief SignalProcessor::AddMeasure
+/// \brief SignalProcessorMoving::AddMeasure
 /// \param captureTime
 /// \param val
 ///
-void SignalProcessor::AddMeasure(TimerTimestamp captureTime, cv::Vec3d val)
+void SignalProcessorMoving::AddMeasure(TimerTimestamp captureTime, const MoveVal_t& val)
 {
-    m_queue.push_back(Measure(captureTime, val));
+    m_queue.push_back(Measure<MoveVal_t>(captureTime, val));
     if (m_queue.size() > m_size)
     {
         m_queue.pop_front();
@@ -43,21 +40,21 @@ void SignalProcessor::AddMeasure(TimerTimestamp captureTime, cv::Vec3d val)
 }
 
 ///
-/// \brief SignalProcessor::GetFreq
+/// \brief SignalProcessorMoving::GetFreq
 /// \return
 ///
-double SignalProcessor::GetFreq() const
+double SignalProcessorMoving::GetFreq() const
 {
     return m_FF.CurrValue();
 }
 
 ///
-/// \brief SignalProcessor::GetInstantaneousFreq
+/// \brief SignalProcessorMoving::GetInstantaneousFreq
 /// \param minFreq
 /// \param maxFreq
 /// \return
 ///
-double SignalProcessor::GetInstantaneousFreq(
+double SignalProcessorMoving::GetInstantaneousFreq(
         double* minFreq,
         double* maxFreq
         ) const
@@ -74,11 +71,11 @@ double SignalProcessor::GetInstantaneousFreq(
 }
 
 ///
-/// \brief SignalProcessor::FindValueForTime
+/// \brief SignalProcessorMoving::FindValueForTime
 /// \param _t
 /// \return
 ///
-cv::Vec3d SignalProcessor::FindValueForTime(TimerTimestamp _t)
+SignalProcessorMoving::MoveVal_t SignalProcessorMoving::FindValueForTime(TimerTimestamp _t)
 {
     if (m_queue.empty())
     {
@@ -88,7 +85,7 @@ cv::Vec3d SignalProcessor::FindValueForTime(TimerTimestamp _t)
     auto it_prev = m_queue.begin();
     for (auto it = m_queue.begin(); it < m_queue.end(); ++it)
     {
-        Measure m = *it;
+        Measure<MoveVal_t> m = *it;
         if (m.t >= _t)
         {
             if (it_prev->t == it->t)
@@ -98,31 +95,31 @@ cv::Vec3d SignalProcessor::FindValueForTime(TimerTimestamp _t)
             else
             {
                 double dt = double(it->t - it_prev->t);
-                cv::Vec3d d_val = cv::Vec3d(it->val - it_prev->val);
+                MoveVal_t d_val = MoveVal_t(it->val - it_prev->val);
                 double t_rel = _t - it_prev->t;
-                cv::Vec3d val_rel = d_val * (t_rel / dt);
+                MoveVal_t val_rel = d_val * (t_rel / dt);
                 return val_rel + it_prev->val;
             }
         }
         it_prev = it;
     }
     assert(0);
-    return cv::Vec3d();
+    return MoveVal_t();
 }
 
 ///
-/// \brief SignalProcessor::UniformTimedPoints
+/// \brief SignalProcessorMoving::UniformTimedPoints
 /// \param NumSamples
 /// \param dst
 /// \param dt
 /// \param Freq
 ///
-void SignalProcessor::UniformTimedPoints(int NumSamples, cv::Mat& dst, double& dt, double Freq)
+void SignalProcessorMoving::UniformTimedPoints(int NumSamples, cv::Mat& dst, double& dt, double Freq)
 {
     if (dst.empty() ||
-            dst.size() != cv::Size(3, NumSamples))
+            dst.size() != cv::Size(1, NumSamples))
     {
-        dst = cv::Mat(3, NumSamples, CV_64FC1);
+        dst = cv::Mat(1, NumSamples, CV_64FC1);
     }
 
     dt = (m_queue.back().t - m_queue.front().t) / (double)NumSamples;
@@ -131,77 +128,14 @@ void SignalProcessor::UniformTimedPoints(int NumSamples, cv::Mat& dst, double& d
     {
         T += dt;
 
-        cv::Vec3d val = FindValueForTime(T);
-        dst.at<double>(0, i) = val[0];
-        dst.at<double>(1, i) = val[1];
-        dst.at<double>(2, i) = val[2];
+        MoveVal_t val = FindValueForTime(T);
+        dst.at<double>(0, i) = val;
     }
     dt /= Freq;
 }
 
 ///
-/// \brief SignalProcessor::FilterRGBSignal
-/// \param src
-/// \param dst
-/// \param filterType
-///
-void SignalProcessor::FilterRGBSignal(cv::Mat& src, cv::Mat& dst)
-{
-    switch (m_filterType)
-    {
-    case FilterICA:
-    {
-        cv::Mat W;
-        cv::Mat d;
-        int N = 0; // Номер независимой компоненты, используемой для измерения частоты
-        FastICA fica;
-        fica.apply(src, d, W); // Производим разделение компонентов
-        d.row(N) *= (W.at<double>(N, N) > 0) ? 1 : -1; // Инверсия при отрицательном коэффициенте
-        dst = d.row(N).clone();
-    }
-        break;
-
-    case FilterPCA:
-        MakePCA(src, dst);
-        break;
-    }
-    cv::normalize(dst, dst, 0, 1, cv::NORM_MINMAX);
-}
-
-///
-/// \brief SignalProcessor::FilterRGBSignal
-/// \param src
-/// \param dst
-/// \param filterType
-///
-void SignalProcessor::FilterRGBSignal(cv::Mat& src, std::vector<cv::Mat>& dst)
-{
-    switch (m_filterType)
-    {
-    case FilterICA:
-    {
-        cv::Mat W;
-        cv::Mat d;
-        FastICA fica;
-        fica.apply(src, d, W); // Производим разделение компонентов
-
-        dst.resize(d.rows);
-        for (int i = 0; i < d.rows; ++i)
-        {
-            d.row(i) *= (W.at<double>(i, i) > 0) ? 1 : -1; // Инверсия при отрицательном коэффициенте
-            dst[i] = d.row(i).clone();
-            cv::normalize(dst[i], dst[i], 0, 1, cv::NORM_MINMAX);
-        }
-    }
-        break;
-
-    case FilterPCA:
-        break;
-    }
-}
-
-///
-/// \brief SignalProcessor::MakeFourier
+/// \brief SignalProcessorMoving::MakeFourier
 /// \param signal
 /// \param deltaTime
 /// \param currFreq
@@ -210,7 +144,7 @@ void SignalProcessor::FilterRGBSignal(cv::Mat& src, std::vector<cv::Mat>& dst)
 /// \param draw
 /// \param img
 ///
-void SignalProcessor::MakeFourier(
+void SignalProcessorMoving::MakeFourier(
         cv::Mat& signal,
         double deltaTime,
         double& currFreq,
@@ -341,11 +275,11 @@ void SignalProcessor::MakeFourier(
 }
 
 ///
-/// \brief SignalProcessor::MeasureFrequency
+/// \brief SignalProcessorMoving::MeasureFrequency
 /// \param img
 /// \param Freq
 ///
-void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq, int frameInd)
+void SignalProcessorMoving::MeasureFrequency(cv::Mat& img, double Freq, int frameInd)
 {
     if (m_queue.size() < m_size)
     {
@@ -361,56 +295,19 @@ void SignalProcessor::MeasureFrequency(cv::Mat& img, double Freq, int frameInd)
     double dt;
     UniformTimedPoints(static_cast<int>(m_queue.size()), src, dt, Freq);
 
-    switch (m_filterType)
-    {
-    case FilterPCA:
-    {
-        // Разделяем сигналы
-        cv::Mat dst;
-        FilterRGBSignal(src, dst);
+    DrawSignal(std::vector<cv::Mat>({ src }), dt, true, frameInd);
 
-        DrawSignal(std::vector<cv::Mat>({ dst }), dt, true, frameInd);
+    MakeFourier(src, dt, m_currFreq, m_minFreq, m_maxFreq, true, img);
 
-        MakeFourier(dst, dt, m_currFreq, m_minFreq, m_maxFreq, true, img);
-    }
-        break;
-
-    case FilterICA:
-    {
-        // Разделяем сигналы
-        std::vector<cv::Mat> dstArr;
-        FilterRGBSignal(src, dstArr);
-
-        DrawSignal(dstArr, dt, true, frameInd);
-
-        for (size_t di = 0; di < dstArr.size(); ++di)
-        {
-            auto& dst = dstArr[di];
-
-            double currFreq = 0;
-            double minFreq = 0;
-            double maxFreq = 0;
-            MakeFourier(dst, dt, currFreq, minFreq, maxFreq, di == 0, img);
-
-            if (di == 0)
-            {
-                m_currFreq = currFreq;
-                m_maxFreq = maxFreq;
-                m_minFreq = minFreq;
-            }
-        }
-    }
-        break;
-    }
-    m_FF.Visualize(true, frameInd);
+    m_FF.Visualize(true, frameInd, "moving");
 }
 
 ///
-/// \brief SignalProcessor::DrawSignal
+/// \brief SignalProcessorMoving::DrawSignal
 /// \param signal
 /// \param deltaTime
 ///
-void SignalProcessor::DrawSignal(const std::vector<cv::Mat>& signal, double deltaTime, bool saveResult, int frameInd)
+void SignalProcessorMoving::DrawSignal(const std::vector<cv::Mat>& signal, double deltaTime, bool saveResult, int frameInd)
 {
     const int wndHeight = 200;
     cv::Mat img(signal.size() * wndHeight, 512, CV_8UC3, cv::Scalar::all(255));
@@ -444,12 +341,12 @@ void SignalProcessor::DrawSignal(const std::vector<cv::Mat>& signal, double delt
         cv::line(img, cv::Point(0, (si + 1) * wndHeight), cv::Point(img.cols - 1, (si + 1) * wndHeight), cv::Scalar(0, 0, 0));
     }
 
-    cv::namedWindow("signal", cv::WINDOW_AUTOSIZE);
-    cv::imshow("signal", img);
+    cv::namedWindow("signal moving", cv::WINDOW_AUTOSIZE);
+    cv::imshow("signal moving", img);
 
     if (saveResult)
     {
-        std::string fileName = "signal/" + std::to_string(frameInd) + ".png";
+        std::string fileName = "signal_moving/" + std::to_string(frameInd) + ".png";
         cv::imwrite(fileName, img);
     }
 }
