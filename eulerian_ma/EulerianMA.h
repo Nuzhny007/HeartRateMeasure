@@ -11,7 +11,7 @@ public:
     EulerianMA();
     ~EulerianMA();
 
-    void Init(cv::Mat rgbframe, int alpha, int lambda_c, float fl, float fh, int samplingRate,float chromAttenuation);
+    void Init(cv::Mat rgbframe, int alpha, int lambda_c, float fl, float fh, int samplingRate, float chromAttenuation);
     void Release();
     cv::Mat Process(cv::Mat rgbframe);
 

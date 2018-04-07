@@ -56,7 +56,12 @@ int main(int argc, char* argv[])
             ("config.skin_detect", po::value<int>()->default_value(1), "Use or not skin detection")
             ("config.filter_type", po::value<std::string>()->default_value("pca"), "Filter type: pca or ica")
             ("config.gpu", po::value<int>()->default_value(0), "Use OpenCL acceleration")
-            ("config.out", po::value<int>()->default_value(0), "Write results to disk");
+            ("config.out", po::value<int>()->default_value(0), "Write results to disk")
+            ("config.ma_alpha", po::value<int>()->default_value(10), "Motion amplification parameter")
+            ("config.ma_lambda_c", po::value<int>()->default_value(16), "Motion amplification parameter")
+            ("config.ma_flow", po::value<float>()->default_value(0.4), "Motion amplification parameter")
+            ("config.ma_fhight", po::value<float>()->default_value(3.0), "Motion amplification parameter")
+            ("config.ma_chromAttenuation", po::value<float>()->default_value(1.0), "Motion amplification parameter");
 
     std::ifstream configFile(argv[2]);
     if (configFile.is_open())
@@ -194,7 +199,13 @@ int main(int argc, char* argv[])
         {
             if (frameInd == 0)
             {
-                eulerianMA.Init(rgbframe, 10, 16, 0.4, 3.0, cvRound(fps), 1.0);
+                eulerianMA.Init(rgbframe,
+                                variables["config.ma_alpha"].as<int>(),
+                                variables["config.ma_lambda_c"].as<int>(),
+                                variables["config.ma_flow"].as<float>(),
+                                variables["config.ma_fhight"].as<float>(),
+                                cvRound(fps),
+                                variables["config.ma_chromAttenuation"].as<float>());
             }
             else
             {
