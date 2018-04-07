@@ -26,36 +26,6 @@ enum RectSelection
 };
 
 ///
-/// \brief SkinInit
-/// \param skinDetector
-/// \return
-///
-bool SkinInit(SkinDetector& skinDetector)
-{
-#if (defined WIN32 || defined _WIN32 || defined WINCE || defined __CYGWIN__)
-	std::string skinPath("");
-#else
-	std::string skinPath("../HeartRateMeasure/data/");
-#endif
-
-	bool res = skinDetector.InitModel(skinPath);
-
-    if (!res)
-    {
-		res = skinDetector.LearnModel(skinPath);
-        if (!res)
-        {
-            std::cout << "Skin detector wasn't initializad!" << std::endl;
-        }
-        else
-        {
-			skinDetector.SaveModel(skinPath);
-        }
-    }
-    return res;
-}
-
-///
 const char* keys =
 {
     "{ @1              |../data/face.mp4    | Video file or web camera index | }"
@@ -171,7 +141,11 @@ int main(int argc, char* argv[])
     std::unique_ptr<FaceDetectorBase> faceDetector = std::make_unique<FaceDetectorHaar>(useOCL);
     FaceLandmarksDetector landmarksDetector;
     SkinDetector skinDetector;
-    if (!SkinInit(skinDetector))
+#if (defined WIN32 || defined _WIN32 || defined WINCE || defined __CYGWIN__)
+    if (!SkinInit(skinDetector, ""))
+#else
+    if (!SkinInit(skinDetector, "../HeartRateMeasure/data/"))
+#endif
     {
         useSkinDetection = false;
     }

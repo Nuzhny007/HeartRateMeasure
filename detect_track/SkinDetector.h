@@ -31,3 +31,27 @@ private:
     ///
     cv::Ptr<cv::ml::StatModel> m_model;
 };
+
+///
+/// \brief SkinInit
+/// \param skinDetector
+/// \return
+///
+inline bool SkinInit(SkinDetector& skinDetector, const std::string& skinPath)
+{
+    bool res = skinDetector.InitModel(skinPath);
+
+    if (!res)
+    {
+        res = skinDetector.LearnModel(skinPath);
+        if (!res)
+        {
+            std::cout << "Skin detector wasn't initializad!" << std::endl;
+        }
+        else
+        {
+            skinDetector.SaveModel(skinPath);
+        }
+    }
+    return res;
+}
