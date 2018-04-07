@@ -13,6 +13,10 @@
 
 #include <opencv2/core/ocl.hpp>
 
+#include <boost/program_options.hpp>
+namespace po = boost::program_options;
+
+
 double Freq = cv::getTickFrequency();
 
 ///
@@ -26,18 +30,6 @@ enum RectSelection
 };
 
 ///
-const char* keys =
-{
-    "{ @1              |../data/face.mp4    | Video file or web camera index | }"
-    "{ s  size         |256                 | Sample size (power of 2) | }"
-    "{ ma motion_ampfl |0                   | Use or not motion ampflification | }"
-    "{ sd skin         |0                   | Use or not skin detection | }"
-    "{ ft filter       |ica                 | Filter type: pca or ica | }"
-    "{ g gpu           |0                   | Use OpenCL acceleration | }"
-    "{ o out           |0                   | Write result to disk | }"
-};
-
-///
 /// \brief main
 /// \param argc
 /// \param argv
@@ -48,27 +40,56 @@ int main(int argc, char* argv[])
 	// чтобы писать по-русски
 	setlocale(LC_ALL, "Russian");
 
-    cv::CommandLineParser parser(argc, argv, keys);
+    if (argc < 3)
+    {
+        std::cerr << "Set video and config files!!!" << std::endl;
+        return -1;
+    }
 
-    bool useOCL = parser.get<int>("gpu") != 0;
+    po::options_description desc;
+
+    po::variables_map variables = po::variables_map();
+
+    desc.add_options()
+            ("config.sample_size", po::value<int>()->default_value(256), "Sample size (power of 2)")
+            ("config.motion_ampfl", po::value<int>()->default_value(1), "Use or not motion ampflification")
+            ("config.skin_detect", po::value<int>()->default_value(1), "Use or not skin detection")
+            ("config.filter_type", po::value<std::string>()->default_value("pca"), "Filter type: pca or ica")
+            ("config.gpu", po::value<int>()->default_value(0), "Use OpenCL acceleration")
+            ("config.out", po::value<int>()->default_value(0), "Write results to disk");
+
+    std::ifstream configFile(argv[2]);
+    if (configFile.is_open())
+    {
+        po::parsed_options parsed = po::parse_config_file(configFile, desc, true);
+        po::store(parsed, variables);
+        po::notify(variables);
+    }
+    else
+    {
+        std::cerr << "Config file \"" << argv[2] << "\' is not opened!" << std::endl;
+        return -2;
+    }
+
+    bool useOCL = variables["config.gpu"].as<int>() != 0;
     cv::ocl::setUseOpenCL(useOCL);
     std::cout << (cv::ocl::useOpenCL() ? "OpenCL is enabled" : "OpenCL not used") << std::endl;
 
 	// Инициализация камеры
     bool useFPS = true;
     double fps = 25;
-    std::string fileName = parser.get<std::string>(0);
+    std::string fileName = argv[1];
 
     // Use motion ampflifacation
-    bool useMA = parser.get<int>("motion_ampfl") != 0;
+    bool useMA = variables["config.motion_ampfl"].as<int>() != 0;
 
     // Количество измерений в графике
-    int sampleSize = parser.get<int>("size");
+    int sampleSize = variables["config.sample_size"].as<int>();
 
-    bool useSkinDetection = parser.get<int>("skin") != 0;;
+    bool useSkinDetection = variables["config.skin_detect"].as<int>() != 0;;
     RectSelection selectionType = FaceDetection;
 
-    SignalProcessorColor::RGBFilters filterType = (parser.get<std::string>("filter") == "ica") ? SignalProcessorColor::FilterICA : SignalProcessorColor::FilterPCA;
+    SignalProcessorColor::RGBFilters filterType = (variables["config.filter_type"].as<std::string>() == "ica") ? SignalProcessorColor::FilterICA : SignalProcessorColor::FilterPCA;
 
     cv::VideoCapture capture;
     if (fileName.size() > 1)
@@ -114,9 +135,9 @@ int main(int argc, char* argv[])
     cv::Mat imgMoving(std::min(100, frameHeight), std::min(640, frameWidth), CV_8UC3, cv::Scalar::all(0));
 
     cv::VideoWriter videoWiter;
-    if (parser.get<int>("out") > 0)
+    if (variables["config.out"].as<int>() > 0)
     {
-        std::string resFileName = fileName + "_" + std::to_string(sampleSize) + "_" + (useMA ? "ma" : "noma") + "_" + parser.get<std::string>("filter") + "_result.avi";
+        std::string resFileName = fileName + "_" + std::to_string(sampleSize) + "_" + (useMA ? "ma" : "noma") + "_" + variables["config.filter_type"].as<std::string>() + "_result.avi";
         videoWiter.open(resFileName, CV_FOURCC('H', 'F', 'Y', 'U'), fps, cv::Size(useMA ? (2 * frameWidth) : frameWidth, frameHeight), true);
         if (!videoWiter.isOpened())
         {

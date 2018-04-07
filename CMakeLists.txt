@@ -6,6 +6,8 @@ FIND_PACKAGE(OpenCV 3.4 REQUIRED)
 
 FIND_PACKAGE(Eigen3)
 
+FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
+
 unset(CMAKE_CXX_FLAGS CACHE)
 
 find_package(OpenMP)
@@ -23,7 +25,8 @@ elseif (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /W4" CACHE STRING COMPILE_FLAGS FORCE)
 endif()
 
-include_directories(${OpenCV_INCLUDE_DIRS})
+include_directories(${OpenCV_INCLUDE_DIRS}
+                    ${Boost_INCLUDE_DIRS})
 
 if (EIGEN3_FOUND)
   INCLUDE_DIRECTORIES("${EIGEN3_INCLUDE_DIR}")
@@ -60,6 +63,7 @@ set(HEADERS
 
 set(LIBS
     ${OpenCV_LIBS}
+    ${Boost_LIBRARIES}
 )
 
 add_executable(HeartRateMeasure ${SOURCE} ${HEADERS})
