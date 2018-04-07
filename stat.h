@@ -48,10 +48,12 @@ public:
     /// \param eps
     /// \param alpha
     ///
-    Gaussian(DATA_T eps, DATA_T alpha)
+    Gaussian(DATA_T eps, DATA_T alpha, DATA_T defVariance, DATA_T minVariance, DATA_T maxVariance)
         :
           m_mean(0),
-          m_var(5),
+          m_var(defVariance),
+          m_minVar(minVariance),
+          m_maxVar(maxVariance),
           m_eps(eps),
           m_alpha(alpha),
           m_lastMeasure(0),
@@ -65,10 +67,12 @@ public:
     /// \param eps
     /// \param alpha
     ///
-    Gaussian(MEAS_T measure, DATA_T eps, DATA_T alpha)
+    Gaussian(MEAS_T measure, DATA_T eps, DATA_T alpha, DATA_T defVariance, DATA_T minVariance, DATA_T maxVariance)
         :
           m_mean(measure),
-          m_var(5),
+          m_var(defVariance),
+          m_minVar(minVariance),
+          m_maxVar(maxVariance),
           m_eps(eps),
           m_alpha(alpha),
           m_lastMeasure(measure),
@@ -126,6 +130,16 @@ private:
     ///
     DATA_T m_var;
     ///
+    /// \brief m_maxVar
+    /// Minimum value of Variance
+    ///
+    DATA_T m_minVar;
+    ///
+    /// \brief m_maxVar
+    /// Maximum value of Variance
+    ///
+    DATA_T m_maxVar;
+    ///
     /// \brief m_eps
     /// Model accuracy:
     /// The maximum ratio of the deviation of the current measure from its average value to the mean square deviation
@@ -165,13 +179,13 @@ private:
         std::cout << "Old: Mean = " << m_mean << ", Var = " << m_var << std::endl;
 
         m_var = sqrt((1 - m_alpha) * sqr(m_var) + m_alpha * sqr(measure - m_mean));
-        if (m_var < 2)
+        if (m_var < m_minVar)
         {
-            m_var = 2;
+            m_var = m_minVar;
         }
-        else if (m_var > 10)
+        else if (m_var > m_maxVar)
         {
-            m_var = 10;
+            m_var = m_maxVar;
         }
         m_mean = (1 - m_alpha) * m_mean + m_alpha * measure;
 
@@ -191,11 +205,11 @@ public:
     /// \param eps
     /// \param alpha
     ///
-    WeightedGaussian(DATA_T eps = 2.7, DATA_T alpha = 0.1)
+    WeightedGaussian(DATA_T eps = 2.7, DATA_T alpha = 0.1, DATA_T defVariance = 5, DATA_T minVariance = 2, DATA_T maxVariance = 10, DATA_T procAlpha = 0.05)
         :
-          Gaussian<MEAS_T, DATA_T>(eps, alpha),
+          Gaussian<MEAS_T, DATA_T>(eps, alpha, defVariance, minVariance, maxVariance),
           m_weight(0),
-          m_procAlpha(0.05)
+          m_procAlpha(procAlpha)
     {
     }
 
@@ -205,11 +219,11 @@ public:
     /// \param eps
     /// \param alpha
     ///
-    WeightedGaussian(MEAS_T measure, DATA_T eps = 2.7, DATA_T alpha = 0.1)
+    WeightedGaussian(MEAS_T measure, DATA_T eps = 2.7, DATA_T alpha = 0.1, DATA_T defVariance = 5, DATA_T minVariance = 2, DATA_T maxVariance = 10, DATA_T procAlpha = 0.05)
         :
-          Gaussian<MEAS_T, DATA_T>(measure, eps, alpha),
+          Gaussian<MEAS_T, DATA_T>(measure, eps, alpha, defVariance, minVariance, maxVariance),
           m_weight(0),
-          m_procAlpha(0.05)
+          m_procAlpha(procAlpha)
     {
     }
 
@@ -251,15 +265,35 @@ template<size_t GAUSS_COUNT, typename MEAS_T, typename DATA_T>
 class GaussMixture
 {
 public:
-    GaussMixture()
+    GaussMixture(DATA_T defaultVariance, DATA_T minVariance, DATA_T maxVariance,
+                 DATA_T defaultGaussEps, DATA_T defaultGaussAlpha,
+                 DATA_T defaultProcAlpha, DATA_T weightThreshold)
         :
           m_currProc(0),
           m_createdProcesses(1),
-          m_weightThreshold(0.2),
-          m_defaultGussEps(2.7),
-          m_defaultGussAlpha(0.1),
+          m_weightThreshold(weightThreshold),
+          m_defaultGaussEps(defaultGaussEps),
+          m_defaultGaussAlpha(defaultGaussAlpha),
+          m_defaultProcAlpha(defaultProcAlpha),
+          m_defaultVariance(defaultVariance),
+          m_minVariance(minVariance),
+          m_maxVariance(maxVariance),
           m_timeStamp(0)
     {
+    }
+
+    ///
+    /// \brief Reset
+    ///
+    void Reset()
+    {
+        m_currProc = 0;
+        m_createdProcesses = 1;
+        m_timeStamp = 0;
+        for (auto& hist : m_history)
+        {
+            hist.clear();
+        }
     }
 
     ///
@@ -301,7 +335,7 @@ public:
                 ++m_createdProcesses;
                 m_currProc = m_createdProcesses - 1;
 
-                m_procList[m_currProc] = WeightedGaussian<MEAS_T, DATA_T>(measure, m_defaultGussEps, m_defaultGussAlpha);
+                m_procList[m_currProc] = WeightedGaussian<MEAS_T, DATA_T>(measure, m_defaultGaussEps, m_defaultGaussAlpha, m_defaultVariance, m_minVariance, m_maxVariance, m_defaultProcAlpha);
                 findProcess = true;
 
                 std::cout << "Create new process " << m_createdProcesses << std::endl;
@@ -320,7 +354,7 @@ public:
                 }
 
                 m_currProc = minProc;
-                m_procList[m_currProc] = WeightedGaussian<MEAS_T, DATA_T>(measure, m_defaultGussEps, m_defaultGussAlpha);
+                m_procList[m_currProc] = WeightedGaussian<MEAS_T, DATA_T>(measure, m_defaultGaussEps, m_defaultGaussAlpha, m_defaultVariance, m_minVariance, m_maxVariance, m_defaultProcAlpha);
 
                 std::cout << "Create new process from " << minProc << " with weight " << minWeight << std::endl;
             }
@@ -475,13 +509,30 @@ private:
     DATA_T m_weightThreshold;
 
     ///
-    /// \brief m_defaultGussEps
+    /// \brief m_defaultGaussEps
     ///
-    DATA_T m_defaultGussEps;
+    DATA_T m_defaultGaussEps;
     ///
-    /// \brief m_defaultGussAlpha
+    /// \brief m_defaultGaussAlpha
     ///
-    DATA_T m_defaultGussAlpha;
+    DATA_T m_defaultGaussAlpha;
+
+    ///
+    /// \brief m_defaultProcAlpha
+    ///
+    DATA_T m_defaultProcAlpha;
+    ///
+    /// \brief m_defaultVariance
+    ///
+    DATA_T m_defaultVariance;
+    ///
+    /// \brief m_minVariance
+    ///
+    DATA_T m_minVariance;
+    ///
+    /// \brief m_maxVariance
+    ///
+    DATA_T m_maxVariance;
 
     ///
     /// \brief m_timeStamp

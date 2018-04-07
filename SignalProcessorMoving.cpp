@@ -4,9 +4,13 @@
 /// \brief SignalProcessorMoving::SignalProcessorMoving
 /// \param framesCount
 ///
-SignalProcessorMoving::SignalProcessorMoving(size_t framesCount)
+SignalProcessorMoving::SignalProcessorMoving(size_t framesCount,
+                                             float gauss_def_var, float gauss_min_var, float gauss_max_var,
+                                             float gauss_eps, float gauss_update_alpha,
+                                             float gauss_proc_alpha, float gauss_proc_weight_thresh)
     :
       m_size(framesCount),
+      m_FF(gauss_def_var, gauss_min_var, gauss_max_var, gauss_eps, gauss_update_alpha, gauss_proc_alpha, gauss_proc_weight_thresh),
       m_minFreq(0),
       m_maxFreq(0),
       m_currFreq(0)
@@ -19,7 +23,7 @@ SignalProcessorMoving::SignalProcessorMoving(size_t framesCount)
 void SignalProcessorMoving::Reset()
 {
     m_queue.clear();
-    m_FF = freq_t();
+    m_FF.Reset();
     m_minFreq = 0;
     m_maxFreq = 0;
     m_currFreq = 0;

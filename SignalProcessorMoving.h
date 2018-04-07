@@ -18,7 +18,10 @@ public:
     /// \brief SignalProcessor
     /// \param framesCount
     ///
-    SignalProcessorMoving(size_t framesCount);
+    SignalProcessorMoving(size_t framesCount,
+                          float gauss_def_var, float gauss_min_var, float gauss_max_var,
+                          float gauss_eps, float gauss_update_alpha,
+                          float gauss_proc_alpha, float gauss_proc_weight_thresh);
 
     ///
     /// \brief Reset

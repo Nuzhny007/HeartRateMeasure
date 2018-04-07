@@ -61,7 +61,14 @@ int main(int argc, char* argv[])
             ("config.ma_lambda_c", po::value<int>()->default_value(16), "Motion amplification parameter")
             ("config.ma_flow", po::value<float>()->default_value(0.4), "Motion amplification parameter")
             ("config.ma_fhight", po::value<float>()->default_value(3.0), "Motion amplification parameter")
-            ("config.ma_chromAttenuation", po::value<float>()->default_value(1.0), "Motion amplification parameter");
+            ("config.ma_chromAttenuation", po::value<float>()->default_value(1.0), "Motion amplification parameter")
+            ("config.gauss_def_var", po::value<float>()->default_value(5.0), "Default variance")
+            ("config.gauss_min_var", po::value<float>()->default_value(10.0), "Minimum variance")
+            ("config.gauss_max_var", po::value<float>()->default_value(10.0), "Maximum variance")
+            ("config.gauss_eps", po::value<float>()->default_value(2.7), "Model accuracy")
+            ("config.gauss_update_alpha", po::value<float>()->default_value(0.1), "Coefficient for mean and variance updating")
+            ("config.gauss_proc_alpha", po::value<float>()->default_value(0.05), "Coefficient for updating gaussian process weight")
+            ("config.gauss_proc_weight_thresh", po::value<float>()->default_value(0.2), "If the weight of the Porocess is bigger then threshold then this Process is robust");
 
     std::ifstream configFile(argv[2]);
     if (configFile.is_open())
@@ -180,8 +187,20 @@ int main(int argc, char* argv[])
     EulerianMA eulerianMA;
 
 	// Создаем анализатор
-    SignalProcessorColor signalProcessorColor(sampleSize, filterType);
-    SignalProcessorMoving signalProcessorMoving(sampleSize);
+    float gauss_def_var = variables["config.gauss_def_var"].as<float>();
+    float gauss_min_var = variables["config.gauss_min_var"].as<float>();
+    float gauss_max_var = variables["config.gauss_max_var"].as<float>();
+    float gauss_eps = variables["config.gauss_eps"].as<float>();
+    float gauss_update_alpha = variables["config.gauss_update_alpha"].as<float>();
+    float gauss_proc_alpha = variables["config.gauss_proc_alpha"].as<float>();
+    float gauss_proc_weight_thresh = variables["config.gauss_proc_weight_thresh"].as<float>();
+
+    SignalProcessorColor signalProcessorColor(sampleSize, filterType,
+                                              gauss_def_var, gauss_min_var, gauss_max_var, gauss_eps,
+                                              gauss_update_alpha, gauss_proc_alpha, gauss_proc_weight_thresh);
+    SignalProcessorMoving signalProcessorMoving(sampleSize,
+                                                gauss_def_var, gauss_min_var, gauss_max_var, gauss_eps,
+                                                gauss_update_alpha, gauss_proc_alpha, gauss_proc_weight_thresh);
 
     double tick_freq = cv::getTickFrequency();
 
