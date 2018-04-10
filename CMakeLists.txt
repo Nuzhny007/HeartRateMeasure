@@ -6,6 +6,9 @@ FIND_PACKAGE(OpenCV 3.4 REQUIRED)
 
 FIND_PACKAGE(Eigen3)
 
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
 FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
 
 unset(CMAKE_CXX_FLAGS CACHE)
@@ -29,10 +32,19 @@ include_directories(${OpenCV_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIRS})
 
 if (EIGEN3_FOUND)
-  INCLUDE_DIRECTORIES("${EIGEN3_INCLUDE_DIR}")
+  INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
+  message(${EIGEN3_INCLUDE_DIR})
 else()
   INCLUDE_DIRECTORIES("/usr/include/eigen3")
+  INCLUDE_DIRECTORIES("c:/alles/libraries/eigen3")
+
+#  get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+#  foreach(dir ${dirs})
+#    message(STATUS "dir='${dir}'")
+#  endforeach()
 endif()
+
+link_directories(${Boost_LIBRARY_DIRS})
 
 # ----------------------------------------------------------------------
 set(SOURCE
