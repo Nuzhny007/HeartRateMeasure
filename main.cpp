@@ -1,4 +1,4 @@
-﻿#include <deque>
+#include <deque>
 #include <iostream>
 #include <string>
 #include <memory>
@@ -37,8 +37,8 @@ enum RectSelection
 ///
 int main(int argc, char* argv[])
 {
-	// чтобы писать по-русски
-	setlocale(LC_ALL, "Russian");
+    // чтобы писать по-русски
+    setlocale(LC_ALL, "Russian");
 
     if (argc < 3)
     {
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
     cv::ocl::setUseOpenCL(useOCL);
     std::cout << (cv::ocl::useOpenCL() ? "OpenCL is enabled" : "OpenCL not used") << std::endl;
 
-	// Инициализация камеры
+    // Инициализация камеры
     bool useFPS = true;
     double fps = 25;
     std::string fileName = argv[1];
@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
             if (!capture.isOpened())
             {
                 std::cerr << "File or cam not opened!" << std::endl;
-                return -1;
+                return -3;
             }
         }
     }
@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
         if (!capture.isOpened())
         {
             std::cerr << "File or cam not opened!" << std::endl;
-            return -1;
+            return -4;
         }
     }
 
@@ -137,10 +137,10 @@ int main(int argc, char* argv[])
     }
     std::cout << "Time frequency = " << Freq << ", fps = " << fps << std::endl;
 
-	// Создаем окошко
+    // Создаем окошко
     cv::namedWindow("output", cv::WINDOW_NORMAL);
 
-	// Изображение для вывода графика
+    // Изображение для вывода графика
     int frameWidth = capture.get(cv::CAP_PROP_FRAME_WIDTH);
     int frameHeight = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
     cv::Mat imgColor(std::min(100, frameHeight), std::min(640, frameWidth), CV_8UC3, cv::Scalar::all(0));
@@ -186,7 +186,7 @@ int main(int argc, char* argv[])
     LKTracker faceTracker;
     EulerianMA eulerianMA;
 
-	// Создаем анализатор
+    // Создаем анализатор
     float gauss_def_var = variables["config.gauss_def_var"].as<float>();
     float gauss_min_var = variables["config.gauss_min_var"].as<float>();
     float gauss_max_var = variables["config.gauss_max_var"].as<float>();
@@ -210,8 +210,8 @@ int main(int argc, char* argv[])
     cv::Mat frame;
     cv::Mat rgbframe;
     for (capture >> rgbframe; !rgbframe.empty(); capture >> rgbframe)
-	{
-		// Запоминаем текущее время
+    {
+        // Запоминаем текущее время
         TimerTimestamp t1 = cv::getTickCount();
 
         if (useMA)
@@ -220,11 +220,11 @@ int main(int argc, char* argv[])
             {
                 eulerianMA.Init(rgbframe,
                                 variables["config.ma_alpha"].as<int>(),
-                                variables["config.ma_lambda_c"].as<int>(),
-                                variables["config.ma_flow"].as<float>(),
-                                variables["config.ma_fhight"].as<float>(),
-                                cvRound(fps),
-                                variables["config.ma_chromAttenuation"].as<float>());
+                        variables["config.ma_lambda_c"].as<int>(),
+                        variables["config.ma_flow"].as<float>(),
+                        variables["config.ma_fhight"].as<float>(),
+                        cvRound(fps),
+                        variables["config.ma_chromAttenuation"].as<float>());
             }
             else
             {
@@ -348,9 +348,9 @@ int main(int argc, char* argv[])
             break;
         }
 
-		// Если есть объект ненулевой площади вычисляем среднее по цвету
+        // Если есть объект ненулевой площади вычисляем среднее по цвету
         if (currentRect.area() > 0)
-		{
+        {
             cv::Mat skinMask;
             if (useSkinDetection)
             {
@@ -360,7 +360,7 @@ int main(int argc, char* argv[])
 
             signalProcessorColor.AddMeasure(captureTime, cv::Vec3d(meanVal.val));
             signalProcessorColor.MeasureFrequency(imgColor, Freq, frameInd);
-		}
+        }
         else
         {
             signalProcessorColor.Reset();
@@ -370,7 +370,7 @@ int main(int argc, char* argv[])
         frame(cv::Rect(frame.cols - imgColor.cols, 0, imgColor.cols, imgColor.rows)) *= 0.5;
         frame(cv::Rect(frame.cols - imgColor.cols, 0, imgColor.cols, imgColor.rows)) += 0.5 * imgColor;
 
-		char str[1024];
+        char str[1024];
         double minFreq = 0;
         double maxFreq = 0;
         double currFreq = signalProcessorColor.GetInstantaneousFreq(&minFreq, &maxFreq);
@@ -378,8 +378,8 @@ int main(int argc, char* argv[])
         cv::putText(frame, str, cv::Point(frame.cols - imgColor.cols, 50), CV_FONT_HERSHEY_COMPLEX, 0.7, cv::Scalar::all(255));
 
         // Draw moving processing result
-        frame(cv::Rect(frame.cols - imgColor.cols - imgMoving.cols, 0, imgMoving.cols, imgMoving.rows)) *= 0.5;
-        frame(cv::Rect(frame.cols - imgColor.cols - imgMoving.cols, 0, imgMoving.cols, imgMoving.rows)) += 0.5 * imgMoving;
+        frame(cv::Rect(frame.cols - imgMoving.cols, imgColor.rows + 1, imgMoving.cols, imgMoving.rows)) *= 0.5;
+        frame(cv::Rect(frame.cols - imgMoving.cols, imgColor.rows + 1, imgMoving.cols, imgMoving.rows)) += 0.5 * imgMoving;
 
         minFreq = 0;
         maxFreq = 0;
@@ -482,7 +482,7 @@ int main(int argc, char* argv[])
         }
 
         ++frameInd;
-	}
+    }
 
     cv::waitKey(0);
 
