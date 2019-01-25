@@ -240,9 +240,29 @@ void SignalProcessorColor::MakeFourier(
     // Квадрат мощности спектра
     cv::pow(signal, 2.0, signal);
 
+	const double total = signal.cols;
+	auto Ind2Freq = [&](int ind) -> double
+	{
+		return (ind * 1000. * deltaTime * 60.0) / (2. * total);
+	};
+	auto Freq2Ind = [&](double bpm) -> int
+	{
+		return cvRound((2.0 * bpm * total) / (60. * 1000. * deltaTime));
+	};
+
+	const double minBpm = 40.0;
+	const double maxBpm = 240.0;
+
+	int filterFreq1 = Freq2Ind(minBpm);
+	int filterFreq2 = Freq2Ind(maxBpm);
+	if (filterFreq1 > filterFreq2)
+	{
+		std::swap(filterFreq1, filterFreq2);
+	}
+
     // Теперь частотный фильтр :)
-    cv::line(signal, cv::Point(0, 0), cv::Point(15, 0), cv::Scalar::all(0), 1, CV_AA);
-    cv::line(signal, cv::Point(100, 0), cv::Point(signal.cols - 1, 0), cv::Scalar::all(0), 1, CV_AA);
+    cv::line(signal, cv::Point(0, 0), cv::Point(filterFreq1, 0), cv::Scalar::all(0), 1, CV_AA);
+    cv::line(signal, cv::Point(filterFreq2, 0), cv::Point(signal.cols - 1, 0), cv::Scalar::all(0), 1, CV_AA);
 
     // Чтобы все разместилось
     cv::normalize(signal, signal, 0, 1, cv::NORM_MINMAX);
@@ -285,15 +305,15 @@ void SignalProcessorColor::MakeFourier(
     }
 
     // И вычислим частоту
-    maxFreq = 60.0 / (1 * deltaTime);
-    minFreq = 60.0 / ((signal.cols - 1) * deltaTime);
+    maxFreq = Ind2Freq(1);
+    minFreq = Ind2Freq(signal.cols - 1);
 
     currFreq = -1;
     for (size_t i = 0; i < maxVals.size(); ++i)
     {
         if (inds[i] > 0)
         {
-            double freq = 60.0 / (inds[i] * deltaTime);
+            double freq = Ind2Freq(inds[i]);
             m_FF.AddMeasure(freq);
 
             if (currFreq < 0)
