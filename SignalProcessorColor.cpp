@@ -1,3 +1,5 @@
+#include <opencv2/imgproc/imgproc_c.h>
+
 #include "SignalProcessorColor.h"
 #include "FastICA.h"
 #include "pca.h"

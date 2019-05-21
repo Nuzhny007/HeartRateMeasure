@@ -1,6 +1,7 @@
 #include "pca.h"
 
 #include <numeric>
+#include <opencv2/core/core_c.h>
 
 ///
 /// \brief MakePCA

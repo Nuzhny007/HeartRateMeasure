@@ -12,6 +12,8 @@
 #include "eulerian_ma/EulerianMA.h"
 
 #include <opencv2/core/ocl.hpp>
+#include <opencv2/imgproc/imgproc_c.h>
+#include <opencv2/videoio/videoio_c.h>
 
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
