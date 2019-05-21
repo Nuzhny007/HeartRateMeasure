@@ -16,11 +16,11 @@ In project uses libraries:
 2. Install OpenCV (https://github.com/opencv/opencv) and OpenCV contrib (https://github.com/opencv/opencv_contrib) repositories
 3. Install Eigen 3 (https://eigen.tuxfamily.org/dox/)
 4. Download project sources:
-
-    git clone https://github.com/Nuzhny007/HeartRateMeasure.git
-    cd HeartRateMeasure
-    mkdir build
-    cd build
-    cmake . .. -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=<opencv_build_dir>
-    make
+      
+        git clone https://github.com/Nuzhny007/HeartRateMeasure.git
+        cd HeartRateMeasure
+        mkdir build
+        cd build
+        cmake . .. -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=<opencv_build_dir>
+        make
 
