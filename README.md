@@ -1,16 +1,18 @@
 # VitaGraph
 
-video pulse detection technology
+Video pulse detection technology
+
+[![Pulse extraction:](https://img.youtube.com/vi/8ZOPl2qWZD8/0.jpg)](https://youtu.be/8ZOPl2qWZD8)
 
 License: MIT
 
-In project uses libraries:
-
-    - [OpenCV](https://github.com/opencv/opencv) and [contrib](https://github.com/opencv/opencv_contrib)
-    - [Sources by Smorodov](http://www.compvision.ru/forum/index.php?/topic/1512-%D0%B8%D0%B7%D0%BC%D0%B5%D1%80%D0%B8%D1%82%D0%B5%D0%BB%D1%8C-%D0%BF%D1%83%D0%BB%D1%8C%D1%81%D0%B0-%D0%BF%D0%BE-%D0%B8%D0%B7%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D1%8E-%D1%83%D1%87%D0%B0%D1%81%D1%82%D0%BA%D0%B0-%D0%BA%D0%BE%D0%B6%D0%B8/)
-    - [Eigen 3](https://eigen.tuxfamily.org/dox/)
-    - Third-party iir
-    - [vpglib](https://github.com/pi-null-mezon/vpglib)
+#### Thirdparty libraries
+* [OpenCV](https://github.com/opencv/opencv) and [contrib](https://github.com/opencv/opencv_contrib)
+* [OpenVINO](https://github.com/opencv/dldt)
+* [Sources by Smorodov](http://www.compvision.ru/forum/index.php?/topic/1512-%D0%B8%D0%B7%D0%BC%D0%B5%D1%80%D0%B8%D1%82%D0%B5%D0%BB%D1%8C-%D0%BF%D1%83%D0%BB%D1%8C%D1%81%D0%B0-%D0%BF%D0%BE-%D0%B8%D0%B7%D0%BE%D0%B1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D1%8E-%D1%83%D1%87%D0%B0%D1%81%D1%82%D0%BA%D0%B0-%D0%BA%D0%BE%D0%B6%D0%B8/)
+* [Eigen 3](https://eigen.tuxfamily.org/dox/)
+* Third-party iir
+* [vpglib](https://github.com/pi-null-mezon/vpglib)
 
 #### Build
 
