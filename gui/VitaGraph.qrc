@@ -1,0 +1,14 @@
+<RCC>
+    <qresource>
+		<file alias="main_icon">logo.png</file>
+		<file alias="SizeAll_Down">SizeAll_Down.png</file>
+		<file alias="SizeE">SizeE.png</file>
+		<file alias="SizeNESW">SizeNESW.png</file>
+		<file alias="SizeNS">SizeNS.png</file>
+		<file alias="SizeNWSE">SizeNWSE.png</file>
+		<file alias="SizeS">SizeS.png</file>
+		<file alias="SizeSE">SizeSE.png</file>
+		<file alias="SizeSW">SizeSW.png</file>
+		<file alias="SizeWE">SizeWE.png</file>
+    </qresource>
+</RCC>
