@@ -28,7 +28,7 @@ public:
     ~MainProcess();
 
     bool Init(const MeasureSettings& settings, const std::string& videoName);
-    bool Process(cv::Mat rgbFrame, cv::Mat& imgProc, int64 captureTime, bool drawResults, bool saveResults, bool createResultsPanno, bool showMixture);
+    bool Process(cv::Mat rgbFrame, cv::Mat& imgProc, int64 captureTime, cv::Scalar& colorVal, bool drawResults, bool saveResults, bool createResultsPanno, bool showMixture);
 
     cv::Rect GetFaceRect() const;
     void GetFrequency(FrequencyResults* freqResults, double* meanFreq = nullptr, double* devFreq = nullptr);

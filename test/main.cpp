@@ -9,6 +9,61 @@
 #include "common/common.h"
 
 ///
+void DrawColors(cv::Scalar cl)
+{
+	static bool initialized = false;
+
+	cv::Scalar backColor(0, 0, 0);
+	static cv::Mat colorsPlot(1024, 768, CV_8UC3, backColor);
+	if (!initialized)
+	{
+		cv::namedWindow("colors", cv::WINDOW_AUTOSIZE);
+		initialized = true;
+	}
+
+	constexpr ptrdiff_t chans = 3;
+
+	// Shift history
+	constexpr int startPos = 100;
+	for (int y = 0; y < colorsPlot.rows; ++y)
+	{
+		uchar* ptr = colorsPlot.ptr(y) + chans * startPos;
+		for (int x = startPos; x < colorsPlot.cols - 1; ++x)
+		{
+			for (ptrdiff_t c = 0; c < chans; ++c)
+			{
+				ptr[c] = ptr[c + chans];
+			}
+			ptr += chans;
+		}
+		for (ptrdiff_t c = 0; c < chans; ++c)
+		{
+			ptr[c] = cv::saturate_cast<uchar>(backColor[c]);
+		}
+	}
+
+	// Draw new color
+	auto C2W = [](double v)
+	{
+		return colorsPlot.rows - cvRound(colorsPlot.rows * v / 255.);
+	};
+	
+	std::array<int, 3> lines{64, 128, 192};
+	for (size_t i = 0; i < lines.size(); ++i)
+	{
+		const auto y = C2W(lines[i]);
+		cv::line(colorsPlot, cv::Point(0, y), cv::Point(colorsPlot.rows - 1, y), cv::Scalar(100, 100, 100), 1);
+		cv::putText(colorsPlot, std::to_string(lines[i]), cv::Point(0, y), cv::FONT_HERSHEY_COMPLEX, 1.0, cv::Scalar::all(255));
+	}
+
+	colorsPlot.at<cv::Vec3b>(C2W(cl[0]), colorsPlot.cols - 1) = cv::Vec3b(255, 0, 0);
+	colorsPlot.at<cv::Vec3b>(C2W(cl[1]), colorsPlot.cols - 1) = cv::Vec3b(0, 255, 0);
+	colorsPlot.at<cv::Vec3b>(C2W(cl[2]), colorsPlot.cols - 1) = cv::Vec3b(0, 0, 255);
+
+	cv::imshow("colors", colorsPlot);
+}
+
+///
 /// \brief main
 /// \param argc
 /// \param argv
@@ -105,6 +160,8 @@ int main(int argc, char* argv[])
     double tick_freq = cv::getTickFrequency();
 
     bool manual = false;
+	
+	bool drawColors = true;
 
     int frameInd = 0;
     cv::Mat rgbframe;
@@ -114,7 +171,8 @@ int main(int argc, char* argv[])
         int64 captureTime = settings.m_useFPS ? static_cast<int64>((frameInd * 1000.) / settings.m_fps) : t1;
 
         cv::Mat frame;
-        if (mainProc.Process(rgbframe, frame, captureTime, true, true, false, true))
+		cv::Scalar colorVal;
+        if (mainProc.Process(rgbframe, frame, captureTime, colorVal, true, true, false, true))
         {
 			mainProc.DrawSignal(signalPlot, true, true);
 			mainProc.DrawFrequency(freqPlot);
@@ -132,6 +190,8 @@ int main(int argc, char* argv[])
         frame(cv::Rect(frame.cols - freqPlot.cols, 0, freqPlot.cols, freqPlot.rows)) += 0.5 * freqPlot;
 		frame(cv::Rect(0, 0, signalPlot.cols, signalPlot.rows)) *= 0.5;
 		frame(cv::Rect(0, 0, signalPlot.cols, signalPlot.rows)) += 0.5 * signalPlot;
+		if (drawColors)
+			DrawColors(colorVal);
 
 		int measure = mainProc.RemainingMeasurements();
 		if (measure > 0)

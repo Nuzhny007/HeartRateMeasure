@@ -453,7 +453,8 @@ void MainWindow::NextFrame(bool forward, bool set_prop)
 		int64 captureTime = m_settings.m_useFPS ? ((frameInd * 1000.) / m_settings.m_fps) : t1;
 
 		cv::Mat frame;
-		bool res = m_mainProc.Process(m_currentFrame, frame, captureTime, false, false, true, false);
+		cv::Scalar colorVal;
+		bool res = m_mainProc.Process(m_currentFrame, frame, captureTime, colorVal, false, false, true, false);
 		//int64 t2 = cv::getTickCount();
 		if (res)
 		{

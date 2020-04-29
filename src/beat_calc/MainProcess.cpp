@@ -149,6 +149,7 @@ bool MainProcess::Process(
         cv::Mat rgbFrame,
         cv::Mat& imgProc,
         int64 captureTime,
+        cv::Scalar& colorVal,
 	    bool drawResults,
 	    bool saveResults,
 	    bool createResultsPanno,
@@ -277,7 +278,6 @@ bool MainProcess::Process(
         }
 		//std::cout << "Skin mean" << std::endl;
 
-		cv::Scalar colorVal;
 		if (m_settings.m_calcMean)
 		{
 			colorVal = cv::mean(imgProc(m_currFaceRect), skinMask.empty() ? cv::noArray() : skinMask);
