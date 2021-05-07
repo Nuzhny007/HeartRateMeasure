@@ -86,3 +86,17 @@ License: MIT
 1. VitaGraph.exe uses Qt-based GUI
 2. HeartRateMeasure.exe is a command line version
 Both programs use configuration files, for example pca_128.conf in folder data
+
+#### Citation
+
+```bibtex
+@article{семенов2016программа,
+  title={Программа для распознавания ТС и АСУ с использованием классификатора SVM},
+  author={Семенов, СС and Ткачев, ДФ and Педан, АВ and Нужный, СП and Котляров, ДЮ and Киселев, ДВ and Вишняков, НИ and Корень, МЮ},
+  journal={Хроники объединенного фонда электронных ресурсов Наука и образование},
+  number={4},
+  pages={67--67},
+  year={2016},
+  publisher={Федеральное государственное бюджетное научное учреждение Институт управления~…}
+}
+```
